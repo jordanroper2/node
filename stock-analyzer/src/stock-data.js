@@ -1,31 +1,55 @@
-import yahooFinance from 'yahoo-finance2';
+import YahooFinance from 'yahoo-finance2';
+
+const yf = new YahooFinance();
 
 const WEEKS_NEEDED = 200;
+
+const YF_CHART_URL = 'https://query1.finance.yahoo.com/v8/finance/chart';
 
 /**
  * Fetch weekly historical closes for a symbol going back at least 200 weeks
  * and return the 200-week simple moving average plus the latest weekly close.
+ *
+ * Uses Yahoo Finance's chart API directly since the yahoo-finance2 library
+ * does not include a historical module in this version.
  */
 export async function fetchWeeklyMA(symbol) {
   const now = new Date();
-  // Go back ~210 weeks (~4 years) to be safe
+  // period1 as unix timestamp: ~210 weeks ago
   const start = new Date(now);
   start.setDate(start.getDate() - WEEKS_NEEDED * 7 - 70);
+  const period1 = Math.floor(start.getTime() / 1000);
+  const period2 = Math.floor(now.getTime() / 1000);
 
-  const startStr = start.toISOString().slice(0, 10);
+  const url = `${YF_CHART_URL}/${encodeURIComponent(symbol)}?period1=${period1}&period2=${period2}&interval=1wk`;
 
-  const result = await yahooFinance.historical(symbol, {
-    period1: startStr,
-    interval: '1wk',
+  const res = await fetch(url, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; StockAnalyzer/1.0)' },
   });
 
-  if (!result || result.length < WEEKS_NEEDED) {
+  if (!res.ok) {
+    throw new Error(`Chart API returned ${res.status} for ${symbol}`);
+  }
+
+  const data = await res.json();
+  const chartResult = data?.chart?.result?.[0];
+  if (!chartResult) {
+    return null;
+  }
+
+  const closes = chartResult.indicators?.quote?.[0]?.close;
+  if (!closes || closes.length < WEEKS_NEEDED) {
     return null; // Not enough history
   }
 
-  // result is sorted oldest-first; take the last 200 entries
-  const recent200 = result.slice(-WEEKS_NEEDED);
-  const sum = recent200.reduce((acc, bar) => acc + bar.close, 0);
+  // Filter out null values and take the last 200 entries
+  const validCloses = closes.filter((c) => c != null);
+  if (validCloses.length < WEEKS_NEEDED) {
+    return null;
+  }
+
+  const recent200 = validCloses.slice(-WEEKS_NEEDED);
+  const sum = recent200.reduce((acc, c) => acc + c, 0);
   const ma200w = sum / WEEKS_NEEDED;
 
   return {
@@ -38,7 +62,7 @@ export async function fetchWeeklyMA(symbol) {
  * Fetch a real-time / delayed quote for a single symbol.
  */
 export async function fetchQuote(symbol) {
-  const q = await yahooFinance.quote(symbol);
+  const q = await yf.quote(symbol);
   return {
     price: q.regularMarketPrice,
     change: q.regularMarketChange,
