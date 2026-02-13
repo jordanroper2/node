@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stock 200-Week MA Analyzer</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --red: #f85149;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --blue: #58a6ff;
+      --accent: #1f6feb;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    header h1 { font-size: 20px; font-weight: 600; }
+    header h1 span { color: var(--blue); }
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s infinite;
+    }
+    .status-dot.scanning { background: var(--yellow); }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .summary-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      padding: 16px 24px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .card .label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .card .value { font-size: 28px; font-weight: 700; margin-top: 4px; }
+    .card .value.red { color: var(--red); }
+    .card .value.green { color: var(--green); }
+    .controls {
+      padding: 0 24px 12px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .controls input, .controls select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .controls input { width: 260px; }
+    .controls select { min-width: 140px; }
+    .progress-bar-container {
+      padding: 0 24px 12px;
+      display: none;
+    }
+    .progress-bar-container.visible { display: block; }
+    .progress-bar {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-bar .fill {
+      height: 100%;
+      background: var(--blue);
+      transition: width 0.3s;
+      width: 0%;
+    }
+    .progress-text { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .table-wrapper {
+      padding: 0 24px 24px;
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    thead th {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 2px solid var(--border);
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    thead th:hover { color: var(--text); }
+    thead th .sort-arrow { margin-left: 4px; font-size: 10px; }
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    tbody tr:hover { background: rgba(56, 139, 253, 0.08); }
+    tbody td { padding: 10px 12px; white-space: nowrap; }
+    .symbol { font-weight: 700; color: var(--blue); }
+    .company-name { color: var(--text-muted); font-size: 12px; }
+    .index-tag {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-right: 4px;
+      background: rgba(88, 166, 255, 0.15);
+      color: var(--blue);
+    }
+    .index-tag.djia { background: rgba(210, 153, 34, 0.15); color: var(--yellow); }
+    .index-tag.sp500 { background: rgba(63, 185, 80, 0.15); color: var(--green); }
+    .index-tag.nasdaq { background: rgba(88, 166, 255, 0.15); color: var(--blue); }
+    .price-up { color: var(--green); }
+    .price-down { color: var(--red); }
+    .below-ma { color: var(--red); font-weight: 700; }
+    .at-ma { color: var(--yellow); font-weight: 700; }
+    .empty-state {
+      text-align: center;
+      padding: 60px 24px;
+      color: var(--text-muted);
+    }
+    .empty-state h2 { margin-bottom: 8px; }
+    footer {
+      text-align: center;
+      padding: 16px;
+      color: var(--text-muted);
+      font-size: 12px;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>200-Week MA <span>Analyzer</span></h1>
+  <div class="status-bar">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">Connecting...</span>
+    <span id="lastUpdated"></span>
+  </div>
+</header>
+
+<div class="summary-cards">
+  <div class="card">
+    <div class="label">Total Stocks Tracked</div>
+    <div class="value" id="totalTracked">—</div>
+  </div>
+  <div class="card">
+    <div class="label">At or Below 200w MA</div>
+    <div class="value red" id="totalFlagged">—</div>
+  </div>
+  <div class="card">
+    <div class="label">DJIA Flagged</div>
+    <div class="value" id="djiaFlagged">—</div>
+  </div>
+  <div class="card">
+    <div class="label">S&amp;P 500 Flagged</div>
+    <div class="value" id="spFlagged">—</div>
+  </div>
+  <div class="card">
+    <div class="label">NASDAQ-100 Flagged</div>
+    <div class="value" id="nasdaqFlagged">—</div>
+  </div>
+</div>
+
+<div class="controls">
+  <input type="text" id="searchInput" placeholder="Search by symbol or company name..." />
+  <select id="indexFilter">
+    <option value="all">All Indexes</option>
+    <option value="DJIA">DJIA</option>
+    <option value="S&P 500">S&amp;P 500</option>
+    <option value="NASDAQ-100">NASDAQ-100</option>
+  </select>
+  <select id="sortField">
+    <option value="pctFromMA">% From MA (Lowest First)</option>
+    <option value="symbol">Symbol (A-Z)</option>
+    <option value="price">Price</option>
+    <option value="marketCap">Market Cap</option>
+    <option value="changePercent">Daily Change %</option>
+  </select>
+</div>
+
+<div class="progress-bar-container" id="progressContainer">
+  <div class="progress-bar"><div class="fill" id="progressFill"></div></div>
+  <div class="progress-text" id="progressText">Scanning...</div>
+</div>
+
+<div class="table-wrapper">
+  <table id="stockTable">
+    <thead>
+      <tr>
+        <th>Symbol</th>
+        <th>Company</th>
+        <th>Indexes</th>
+        <th>Price</th>
+        <th>Day Change</th>
+        <th>200w MA</th>
+        <th>% From MA</th>
+        <th>Day Range</th>
+        <th>52w Range</th>
+        <th>Market Cap</th>
+        <th>Updated</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody">
+    </tbody>
+  </table>
+  <div class="empty-state" id="emptyState">
+    <h2>Waiting for data...</h2>
+    <p>The initial scan of all index constituents is running. This may take several minutes.</p>
+  </div>
+</div>
+
+<footer>
+  Stock 200-Week Moving Average Analyzer &mdash; Data via Yahoo Finance (may be delayed 15 min) &mdash; Refreshes every 60s
+</footer>
+
+<script>
+(function () {
+  let currentData = [];
+  const $ = (id) => document.getElementById(id);
+
+  // --- WebSocket ---
+  let ws;
+  function connect() {
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    ws = new WebSocket(`${proto}://${location.host}`);
+    ws.onopen = () => {
+      $('statusDot').className = 'status-dot';
+      $('statusText').textContent = 'Connected';
+    };
+    ws.onclose = () => {
+      $('statusDot').className = 'status-dot scanning';
+      $('statusText').textContent = 'Disconnected — reconnecting...';
+      setTimeout(connect, 3000);
+    };
+    ws.onmessage = (ev) => {
+      const msg = JSON.parse(ev.data);
+      handleMessage(msg);
+    };
+  }
+  connect();
+
+  function handleMessage(msg) {
+    switch (msg.type) {
+      case 'update':
+        currentData = msg.data.flagged || [];
+        $('totalTracked').textContent = msg.data.totalAnalyzed || '—';
+        $('totalFlagged').textContent = msg.data.totalFlagged || '0';
+        updateIndexCounts();
+        $('lastUpdated').textContent = msg.data.timestamp
+          ? '· ' + new Date(msg.data.timestamp).toLocaleTimeString()
+          : '';
+        $('progressContainer').classList.remove('visible');
+        render();
+        break;
+      case 'scan:start':
+        $('progressContainer').classList.add('visible');
+        $('progressFill').style.width = '0%';
+        $('progressText').textContent = `Scanning 0/${msg.data.total}...`;
+        $('statusDot').className = 'status-dot scanning';
+        $('statusText').textContent = 'Scanning...';
+        break;
+      case 'scan:progress':
+        $('progressFill').style.width = msg.data.pct + '%';
+        $('progressText').textContent = `Scanning ${msg.data.done}/${msg.data.total} (${msg.data.pct}%)...`;
+        break;
+      case 'scan:complete':
+        $('progressContainer').classList.remove('visible');
+        $('statusDot').className = 'status-dot';
+        $('statusText').textContent = 'Live';
+        break;
+      case 'status':
+        $('statusText').textContent = msg.data.message;
+        break;
+    }
+  }
+
+  function updateIndexCounts() {
+    let djia = 0, sp = 0, nasdaq = 0;
+    for (const s of currentData) {
+      if (s.indexes.includes('DJIA')) djia++;
+      if (s.indexes.includes('S&P 500')) sp++;
+      if (s.indexes.includes('NASDAQ-100')) nasdaq++;
+    }
+    $('djiaFlagged').textContent = djia;
+    $('spFlagged').textContent = sp;
+    $('nasdaqFlagged').textContent = nasdaq;
+  }
+
+  // --- Filtering & Sorting ---
+  function getFiltered() {
+    const search = $('searchInput').value.toLowerCase();
+    const index = $('indexFilter').value;
+    let data = currentData;
+
+    if (search) {
+      data = data.filter(
+        (s) =>
+          s.symbol.toLowerCase().includes(search) ||
+          s.name.toLowerCase().includes(search)
+      );
+    }
+    if (index !== 'all') {
+      data = data.filter((s) => s.indexes.includes(index));
+    }
+
+    const field = $('sortField').value;
+    data = [...data].sort((a, b) => {
+      if (field === 'symbol') return a.symbol.localeCompare(b.symbol);
+      return (a[field] ?? 0) - (b[field] ?? 0);
+    });
+
+    return data;
+  }
+
+  $('searchInput').addEventListener('input', render);
+  $('indexFilter').addEventListener('change', render);
+  $('sortField').addEventListener('change', render);
+
+  // --- Rendering ---
+  function fmt(n, decimals = 2) {
+    if (n == null) return '—';
+    return n.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  }
+  function fmtLarge(n) {
+    if (n == null) return '—';
+    if (n >= 1e12) return (n / 1e12).toFixed(2) + 'T';
+    if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+    return n.toLocaleString();
+  }
+
+  function render() {
+    const data = getFiltered();
+    const tbody = $('tableBody');
+    const empty = $('emptyState');
+
+    if (data.length === 0 && currentData.length === 0) {
+      tbody.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    tbody.innerHTML = data
+      .map((s) => {
+        const changeClass = s.change >= 0 ? 'price-up' : 'price-down';
+        const changeSign = s.change >= 0 ? '+' : '';
+        const maClass = s.pctFromMA < 0 ? 'below-ma' : 'at-ma';
+        const indexTags = s.indexes
+          .map((idx) => {
+            const cls = idx === 'DJIA' ? 'djia' : idx === 'S&P 500' ? 'sp500' : 'nasdaq';
+            return `<span class="index-tag ${cls}">${idx}</span>`;
+          })
+          .join('');
+        return `<tr>
+          <td class="symbol">${s.symbol}</td>
+          <td class="company-name">${s.name}</td>
+          <td>${indexTags}</td>
+          <td>$${fmt(s.price)}</td>
+          <td class="${changeClass}">${changeSign}${fmt(s.change)} (${changeSign}${fmt(s.changePercent)}%)</td>
+          <td>$${fmt(s.ma200w)}</td>
+          <td class="${maClass}">${fmt(s.pctFromMA)}%</td>
+          <td>$${fmt(s.dayLow)} – $${fmt(s.dayHigh)}</td>
+          <td>$${fmt(s.fiftyTwoWeekLow)} – $${fmt(s.fiftyTwoWeekHigh)}</td>
+          <td>${fmtLarge(s.marketCap)}</td>
+          <td style="color:var(--text-muted);font-size:12px">${s.lastUpdated ? new Date(s.lastUpdated).toLocaleTimeString() : '—'}</td>
+        </tr>`;
+      })
+      .join('');
+  }
+})();
+</script>
+</body>
+</html>

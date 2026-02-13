@@ -1,6 +1,7 @@
 {
   "name": "stock-moving-average-analyzer",
   "version": "1.0.0",
+  "type": "module",
   "description": "Real-time dashboard flagging Dow Jones, S&P 500, and NASDAQ-100 stocks trading at or below their 200-week moving average",
   "main": "src/index.js",
   "scripts": {
