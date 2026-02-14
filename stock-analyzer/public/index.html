@@ -237,6 +237,11 @@
   <div class="index-card"><div class="idx-left"><div class="idx-name">Loading index data...</div></div></div>
 </div>
 
+<div class="section-label">Crypto 200-Week Moving Averages</div>
+<div class="index-cards" id="cryptoCards">
+  <div class="index-card"><div class="idx-left"><div class="idx-name">Loading crypto data...</div></div></div>
+</div>
+
 <div class="controls">
   <input type="text" id="searchInput" placeholder="Search by symbol or company name..." />
   <select id="indexFilter">
@@ -245,7 +250,6 @@
     <option value="S&P 500">S&amp;P 500</option>
     <option value="NASDAQ-100">NASDAQ-100</option>
     <option value="Index">Index Tickers</option>
-    <option value="Crypto">Crypto</option>
   </select>
   <select id="maFilter">
     <option value="all">All Stocks</option>
@@ -300,8 +304,10 @@
 (function () {
   let currentData = [];
   let currentIndexes = [];
+  let currentCryptos = [];
   const $ = (id) => document.getElementById(id);
   const INDEX_SYMBOLS = ['^DJI', '^GSPC', '^IXIC'];
+  const CRYPTO_SYMBOLS = ['BTC-USD', 'ETH-USD'];
 
   // --- Formatting helpers ---
   function fmt(n, decimals = 2) {
@@ -320,13 +326,15 @@
   function applySnapshot(data) {
     // data can come from WebSocket msg.data or from /api/snapshot
     currentData = data.stocks || data.flagged || [];
-    // Pull index entries from the stocks array
+    // Pull index and crypto entries from the stocks array
     currentIndexes = currentData.filter((s) => INDEX_SYMBOLS.includes(s.symbol));
+    currentCryptos = currentData.filter((s) => CRYPTO_SYMBOLS.includes(s.symbol));
 
     $('totalTracked').textContent = data.totalAnalyzed || currentData.length || '—';
     $('totalFlagged').textContent = data.totalFlagged || '0';
     $('totalAbove').textContent = (data.totalAnalyzed || currentData.length || 0) - (data.totalFlagged || 0);
     renderIndexCards();
+    renderCryptoCards();
     $('lastUpdated').textContent = data.timestamp
       ? '· ' + new Date(data.timestamp).toLocaleTimeString()
       : '';
@@ -430,12 +438,41 @@
     }).join('');
   }
 
+  function renderCryptoCards() {
+    const container = $('cryptoCards');
+    if (currentCryptos.length === 0) {
+      container.innerHTML = '<div class="index-card"><div class="idx-left"><div class="idx-name">Waiting for crypto data...</div></div></div>';
+      return;
+    }
+    container.innerHTML = currentCryptos.map((c) => {
+      const changeClass = (c.change || 0) >= 0 ? 'price-up' : 'price-down';
+      const changeSign = (c.change || 0) >= 0 ? '+' : '';
+      const pctClass = c.pctFromMA >= 0 ? 'above' : 'below';
+      const pctSign = c.pctFromMA >= 0 ? '+' : '';
+      const updated = c.lastUpdated ? new Date(c.lastUpdated).toLocaleTimeString() : '—';
+      return `<div class="index-card">
+        <div class="idx-left">
+          <div class="idx-name">${c.name}</div>
+          <div class="idx-symbol">${c.symbol}</div>
+          <div class="idx-price">$${fmt(c.price)}</div>
+          <div class="idx-change ${changeClass}">${changeSign}${fmt(c.change)} (${changeSign}${fmt(c.changePercent)}%)</div>
+        </div>
+        <div class="idx-right">
+          <div class="idx-ma-label">200-Week MA</div>
+          <div class="idx-ma-value">$${fmt(c.ma200w)}</div>
+          <div class="idx-pct ${pctClass}">${pctSign}${fmt(c.pctFromMA)}%</div>
+          <div class="idx-updated">${updated}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
   // --- Filtering & Sorting ---
   function getFiltered() {
     const search = $('searchInput').value.toLowerCase();
     const index = $('indexFilter').value;
     const maFilter = $('maFilter').value;
-    let data = currentData;
+    let data = currentData.filter((s) => !CRYPTO_SYMBOLS.includes(s.symbol));
 
     if (search) {
       data = data.filter(
