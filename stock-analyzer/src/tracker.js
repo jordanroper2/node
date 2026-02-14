@@ -198,14 +198,14 @@ export class StockTracker extends EventEmitter {
 
   /** Return a plain-object snapshot of current state. */
   getSnapshot() {
-    const flaggedArr = Array.from(this.flagged.values()).sort(
+    const allArr = Array.from(this.all.values()).sort(
       (a, b) => a.pctFromMA - b.pctFromMA
     );
     return {
       timestamp: new Date().toISOString(),
       totalAnalyzed: this.all.size,
       totalFlagged: this.flagged.size,
-      flagged: flaggedArr,
+      stocks: allArr,
       indexes: Array.from(this.indexes.values()),
     };
   }

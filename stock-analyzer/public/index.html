@@ -188,7 +188,7 @@
     .price-up { color: var(--green); }
     .price-down { color: var(--red); }
     .below-ma { color: var(--red); font-weight: 700; }
-    .at-ma { color: var(--yellow); font-weight: 700; }
+    .above-ma { color: var(--green); font-weight: 700; }
     .empty-state {
       text-align: center;
       padding: 60px 24px;
@@ -221,20 +221,12 @@
     <div class="value" id="totalTracked">—</div>
   </div>
   <div class="card">
+    <div class="label">Above 200w MA</div>
+    <div class="value green" id="totalAbove">—</div>
+  </div>
+  <div class="card">
     <div class="label">At or Below 200w MA</div>
     <div class="value red" id="totalFlagged">—</div>
-  </div>
-  <div class="card">
-    <div class="label">DJIA Flagged</div>
-    <div class="value" id="djiaFlagged">—</div>
-  </div>
-  <div class="card">
-    <div class="label">S&amp;P 500 Flagged</div>
-    <div class="value" id="spFlagged">—</div>
-  </div>
-  <div class="card">
-    <div class="label">NASDAQ-100 Flagged</div>
-    <div class="value" id="nasdaqFlagged">—</div>
   </div>
 </div>
 
@@ -250,6 +242,11 @@
     <option value="DJIA">DJIA</option>
     <option value="S&P 500">S&amp;P 500</option>
     <option value="NASDAQ-100">NASDAQ-100</option>
+  </select>
+  <select id="maFilter">
+    <option value="all">All Stocks</option>
+    <option value="below">Below 200w MA</option>
+    <option value="above">Above 200w MA</option>
   </select>
   <select id="sortField">
     <option value="pctFromMA">% From MA (Lowest First)</option>
@@ -325,10 +322,11 @@
   function handleMessage(msg) {
     switch (msg.type) {
       case 'update':
-        currentData = msg.data.flagged || [];
+        currentData = msg.data.stocks || [];
         currentIndexes = msg.data.indexes || [];
         $('totalTracked').textContent = msg.data.totalAnalyzed || '—';
         $('totalFlagged').textContent = msg.data.totalFlagged || '0';
+        $('totalAbove').textContent = (msg.data.totalAnalyzed || 0) - (msg.data.totalFlagged || 0);
         updateIndexCounts();
         renderIndexCards();
         $('lastUpdated').textContent = msg.data.timestamp
@@ -360,15 +358,7 @@
   }
 
   function updateIndexCounts() {
-    let djia = 0, sp = 0, nasdaq = 0;
-    for (const s of currentData) {
-      if (s.indexes.includes('DJIA')) djia++;
-      if (s.indexes.includes('S&P 500')) sp++;
-      if (s.indexes.includes('NASDAQ-100')) nasdaq++;
-    }
-    $('djiaFlagged').textContent = djia;
-    $('spFlagged').textContent = sp;
-    $('nasdaqFlagged').textContent = nasdaq;
+    // no-op — removed per-index flagged cards
   }
 
   function renderIndexCards() {
@@ -404,6 +394,7 @@
   function getFiltered() {
     const search = $('searchInput').value.toLowerCase();
     const index = $('indexFilter').value;
+    const maFilter = $('maFilter').value;
     let data = currentData;
 
     if (search) {
@@ -415,6 +406,11 @@
     }
     if (index !== 'all') {
       data = data.filter((s) => s.indexes.includes(index));
+    }
+    if (maFilter === 'below') {
+      data = data.filter((s) => s.atOrBelowMA);
+    } else if (maFilter === 'above') {
+      data = data.filter((s) => !s.atOrBelowMA);
     }
 
     const field = $('sortField').value;
@@ -428,6 +424,7 @@
 
   $('searchInput').addEventListener('input', render);
   $('indexFilter').addEventListener('change', render);
+  $('maFilter').addEventListener('change', render);
   $('sortField').addEventListener('change', render);
 
   // --- Rendering ---
@@ -459,7 +456,7 @@
       .map((s) => {
         const changeClass = s.change >= 0 ? 'price-up' : 'price-down';
         const changeSign = s.change >= 0 ? '+' : '';
-        const maClass = s.pctFromMA < 0 ? 'below-ma' : 'at-ma';
+        const maClass = s.atOrBelowMA ? 'below-ma' : 'above-ma';
         const indexTags = s.indexes
           .map((idx) => {
             const cls = idx === 'DJIA' ? 'djia' : idx === 'S&P 500' ? 'sp500' : 'nasdaq';
