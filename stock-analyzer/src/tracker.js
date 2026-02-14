@@ -1,11 +1,11 @@
 import EventEmitter from 'events';
-import { analyzeAll, fetchQuote, fetchStockData } from './stock-data.js';
+import { analyzeAll, fetchQuote } from './stock-data.js';
 import { buildMasterList } from './constituents.js';
 
 const INDEX_TICKERS = [
-  { symbol: '^DJI', name: 'Dow Jones Industrial Average' },
-  { symbol: '^GSPC', name: 'S&P 500' },
-  { symbol: '^IXIC', name: 'NASDAQ Composite' },
+  { symbol: '^DJI', name: 'Dow Jones Industrial Average', indexes: ['Index'] },
+  { symbol: '^GSPC', name: 'S&P 500 Index', indexes: ['Index'] },
+  { symbol: '^IXIC', name: 'NASDAQ Composite Index', indexes: ['Index'] },
 ];
 
 export class StockTracker extends EventEmitter {
@@ -18,13 +18,12 @@ export class StockTracker extends EventEmitter {
     this.batchSize = opts.batchSize || 5;
     this.delayMs = opts.delayMs || 600;
 
-    this.masterList = buildMasterList();
+    // Build the master list and include the 3 major index tickers
+    this.masterList = [...buildMasterList(), ...INDEX_TICKERS];
     // Map<symbol, entry> for stocks currently at or below 200w MA
     this.flagged = new Map();
     // Map<symbol, entry> for all analyzed stocks (above or below)
     this.all = new Map();
-    // Index-level 200w MA data
-    this.indexes = new Map();
 
     this._quoteTimer = null;
     this._scanTimer = null;
@@ -56,49 +55,15 @@ export class StockTracker extends EventEmitter {
     this.emit('status', 'Tracker stopped.');
   }
 
-  /** Fetch 200w MA data for the 3 major index tickers. */
-  async _scanIndexes() {
-    for (const idx of INDEX_TICKERS) {
-      try {
-        const data = await fetchStockData(idx.symbol);
-        if (data && data.maData && data.quoteData && data.quoteData.price != null) {
-          const { maData, quoteData } = data;
-          this.indexes.set(idx.symbol, {
-            symbol: idx.symbol,
-            name: idx.name,
-            price: quoteData.price,
-            ma200w: maData.ma200w,
-            pctFromMA: Math.round(((quoteData.price - maData.ma200w) / maData.ma200w) * 10000) / 100,
-            atOrBelowMA: quoteData.price <= maData.ma200w,
-            change: quoteData.change,
-            changePercent: quoteData.changePercent,
-            dayHigh: quoteData.dayHigh,
-            dayLow: quoteData.dayLow,
-            fiftyTwoWeekHigh: quoteData.fiftyTwoWeekHigh,
-            fiftyTwoWeekLow: quoteData.fiftyTwoWeekLow,
-            lastUpdated: new Date().toISOString(),
-          });
-        }
-      } catch (err) {
-        console.error(`[tracker] Error fetching index ${idx.symbol}: ${err.message}`);
-      }
-    }
-  }
-
-  /** Full scan: fetch 200w MA + quote for every constituent. */
+  /** Full scan: fetch 200w MA + quote for every constituent (including index tickers). */
   async _fullScan() {
     this.emit('scan:start', this.masterList.length);
-
-    // Scan indexes in parallel with the stock scan start
-    const indexPromise = this._scanIndexes();
 
     const { results, errors } = await analyzeAll(this.masterList, {
       batchSize: this.batchSize,
       delayMs: this.delayMs,
       onProgress: (done, total) => this.emit('scan:progress', done, total),
     });
-
-    await indexPromise;
 
     this.all.clear();
     this.flagged.clear();
@@ -171,27 +136,6 @@ export class StockTracker extends EventEmitter {
       }
     }
 
-    // Also refresh index quotes
-    for (const idx of INDEX_TICKERS) {
-      try {
-        const q = await fetchQuote(idx.symbol);
-        const existing = this.indexes.get(idx.symbol);
-        if (existing && q.price != null) {
-          existing.price = q.price;
-          existing.change = q.change;
-          existing.changePercent = q.changePercent;
-          existing.dayHigh = q.dayHigh;
-          existing.dayLow = q.dayLow;
-          existing.pctFromMA =
-            Math.round(((q.price - existing.ma200w) / existing.ma200w) * 10000) / 100;
-          existing.atOrBelowMA = q.price <= existing.ma200w;
-          existing.lastUpdated = new Date().toISOString();
-        }
-      } catch {
-        // ignore refresh errors for indexes
-      }
-    }
-
     this.emit('refresh:complete', watchSymbols.length);
     this.emit('update', this.getSnapshot());
   }
@@ -201,13 +145,17 @@ export class StockTracker extends EventEmitter {
     const allArr = Array.from(this.all.values()).sort(
       (a, b) => a.pctFromMA - b.pctFromMA
     );
+    // Pull index tickers from the main map for the index cards
+    const indexes = INDEX_TICKERS
+      .map((t) => this.all.get(t.symbol))
+      .filter(Boolean);
     return {
       timestamp: new Date().toISOString(),
       totalAnalyzed: this.all.size,
       totalFlagged: this.flagged.size,
       stocks: allArr,
-      flagged: allArr, // kept for backward compat with any cached HTML
-      indexes: Array.from(this.indexes.values()),
+      flagged: allArr, // backward compat
+      indexes,
     };
   }
 }

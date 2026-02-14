@@ -299,6 +299,57 @@
   let currentData = [];
   let currentIndexes = [];
   const $ = (id) => document.getElementById(id);
+  const INDEX_SYMBOLS = ['^DJI', '^GSPC', '^IXIC'];
+
+  // --- Formatting helpers ---
+  function fmt(n, decimals = 2) {
+    if (n == null || Number.isNaN(n)) return '—';
+    return n.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  }
+  function fmtLarge(n) {
+    if (n == null || Number.isNaN(n)) return '—';
+    if (n >= 1e12) return (n / 1e12).toFixed(2) + 'T';
+    if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+    return n.toLocaleString();
+  }
+
+  // --- Apply snapshot data to the UI ---
+  function applySnapshot(data) {
+    // data can come from WebSocket msg.data or from /api/snapshot
+    currentData = data.stocks || data.flagged || [];
+    // Pull index entries from the stocks array
+    currentIndexes = currentData.filter((s) => INDEX_SYMBOLS.includes(s.symbol));
+
+    $('totalTracked').textContent = data.totalAnalyzed || currentData.length || '—';
+    $('totalFlagged').textContent = data.totalFlagged || '0';
+    $('totalAbove').textContent = (data.totalAnalyzed || currentData.length || 0) - (data.totalFlagged || 0);
+    renderIndexCards();
+    $('lastUpdated').textContent = data.timestamp
+      ? '· ' + new Date(data.timestamp).toLocaleTimeString()
+      : '';
+    $('progressContainer').classList.remove('visible');
+    render();
+  }
+
+  // --- HTTP fetch fallback: load data on page load ---
+  async function fetchSnapshot() {
+    try {
+      const res = await fetch('/api/snapshot');
+      if (res.ok) {
+        const data = await res.json();
+        if ((data.stocks || data.flagged || []).length > 0) {
+          applySnapshot(data);
+        }
+      }
+    } catch { /* ignore — WebSocket will provide data */ }
+  }
+  // Fetch immediately on page load, and also poll every 10s until we get data
+  fetchSnapshot();
+  const pollId = setInterval(() => {
+    if (currentData.length > 10) { clearInterval(pollId); return; }
+    fetchSnapshot();
+  }, 10000);
 
   // --- WebSocket ---
   let ws;
@@ -324,21 +375,7 @@
   function handleMessage(msg) {
     switch (msg.type) {
       case 'update':
-        currentData = msg.data.stocks || msg.data.flagged || [];
-        currentIndexes = msg.data.indexes || [];
-        // Merge index tickers into the table data so they show as rows
-        for (const idx of currentIndexes) {
-          currentData.push({ ...idx, indexes: ['Index'] });
-        }
-        $('totalTracked').textContent = msg.data.totalAnalyzed || '—';
-        $('totalFlagged').textContent = msg.data.totalFlagged || '0';
-        $('totalAbove').textContent = (msg.data.totalAnalyzed || 0) - (msg.data.totalFlagged || 0);
-        renderIndexCards();
-        $('lastUpdated').textContent = msg.data.timestamp
-          ? '· ' + new Date(msg.data.timestamp).toLocaleTimeString()
-          : '';
-        $('progressContainer').classList.remove('visible');
-        render();
+        applySnapshot(msg.data);
         break;
       case 'scan:start':
         $('progressContainer').classList.add('visible');
@@ -406,7 +443,7 @@
       );
     }
     if (index !== 'all') {
-      data = data.filter((s) => s.indexes.includes(index));
+      data = data.filter((s) => (s.indexes || []).includes(index));
     }
     if (maFilter === 'below') {
       data = data.filter((s) => s.atOrBelowMA);
@@ -429,18 +466,6 @@
   $('sortField').addEventListener('change', render);
 
   // --- Rendering ---
-  function fmt(n, decimals = 2) {
-    if (n == null) return '—';
-    return n.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-  }
-  function fmtLarge(n) {
-    if (n == null) return '—';
-    if (n >= 1e12) return (n / 1e12).toFixed(2) + 'T';
-    if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
-    if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
-    return n.toLocaleString();
-  }
-
   function render() {
     const data = getFiltered();
     const tbody = $('tableBody');
@@ -455,8 +480,10 @@
 
     tbody.innerHTML = data
       .map((s) => {
-        const changeClass = s.change >= 0 ? 'price-up' : 'price-down';
-        const changeSign = s.change >= 0 ? '+' : '';
+        const ch = Number.isFinite(s.change) ? s.change : null;
+        const chPct = Number.isFinite(s.changePercent) ? s.changePercent : null;
+        const changeClass = (ch || 0) >= 0 ? 'price-up' : 'price-down';
+        const changeSign = (ch || 0) >= 0 ? '+' : '';
         const maClass = s.atOrBelowMA ? 'below-ma' : 'above-ma';
         const indexTags = (s.indexes || [])
           .map((idx) => {
@@ -469,7 +496,7 @@
           <td class="company-name">${s.name}</td>
           <td>${indexTags}</td>
           <td>$${fmt(s.price)}</td>
-          <td class="${changeClass}">${changeSign}${fmt(s.change)} (${changeSign}${fmt(s.changePercent)}%)</td>
+          <td class="${changeClass}">${changeSign}${fmt(ch)} (${changeSign}${fmt(chPct)}%)</td>
           <td>$${fmt(s.ma200w)}</td>
           <td class="${maClass}">${fmt(s.pctFromMA)}%</td>
           <td>$${fmt(s.dayLow)} – $${fmt(s.dayHigh)}</td>
