@@ -69,6 +69,42 @@
     .card .value { font-size: 28px; font-weight: 700; margin-top: 4px; }
     .card .value.red { color: var(--red); }
     .card .value.green { color: var(--green); }
+    .index-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 12px;
+      padding: 0 24px 16px;
+    }
+    .index-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .index-card .idx-left { flex: 1; }
+    .index-card .idx-name { font-size: 13px; color: var(--text-muted); margin-bottom: 2px; }
+    .index-card .idx-symbol { font-size: 16px; font-weight: 700; color: var(--blue); }
+    .index-card .idx-price { font-size: 22px; font-weight: 700; margin-top: 6px; }
+    .index-card .idx-change { font-size: 13px; margin-top: 2px; }
+    .index-card .idx-right { text-align: right; }
+    .index-card .idx-ma-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .index-card .idx-ma-value { font-size: 16px; font-weight: 600; margin-top: 2px; }
+    .index-card .idx-pct { font-size: 18px; font-weight: 700; margin-top: 6px; }
+    .index-card .idx-pct.above { color: var(--green); }
+    .index-card .idx-pct.below { color: var(--red); }
+    .index-card .idx-updated { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+    .section-label {
+      padding: 4px 24px 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
     .controls {
       padding: 0 24px 12px;
       display: flex;
@@ -202,6 +238,11 @@
   </div>
 </div>
 
+<div class="section-label">Index 200-Week Moving Averages</div>
+<div class="index-cards" id="indexCards">
+  <div class="index-card"><div class="idx-left"><div class="idx-name">Loading index data...</div></div></div>
+</div>
+
 <div class="controls">
   <input type="text" id="searchInput" placeholder="Search by symbol or company name..." />
   <select id="indexFilter">
@@ -257,6 +298,7 @@
 <script>
 (function () {
   let currentData = [];
+  let currentIndexes = [];
   const $ = (id) => document.getElementById(id);
 
   // --- WebSocket ---
@@ -284,9 +326,11 @@
     switch (msg.type) {
       case 'update':
         currentData = msg.data.flagged || [];
+        currentIndexes = msg.data.indexes || [];
         $('totalTracked').textContent = msg.data.totalAnalyzed || '—';
         $('totalFlagged').textContent = msg.data.totalFlagged || '0';
         updateIndexCounts();
+        renderIndexCards();
         $('lastUpdated').textContent = msg.data.timestamp
           ? '· ' + new Date(msg.data.timestamp).toLocaleTimeString()
           : '';
@@ -325,6 +369,35 @@
     $('djiaFlagged').textContent = djia;
     $('spFlagged').textContent = sp;
     $('nasdaqFlagged').textContent = nasdaq;
+  }
+
+  function renderIndexCards() {
+    const container = $('indexCards');
+    if (currentIndexes.length === 0) {
+      container.innerHTML = '<div class="index-card"><div class="idx-left"><div class="idx-name">Waiting for index data...</div></div></div>';
+      return;
+    }
+    container.innerHTML = currentIndexes.map((idx) => {
+      const changeClass = (idx.change || 0) >= 0 ? 'price-up' : 'price-down';
+      const changeSign = (idx.change || 0) >= 0 ? '+' : '';
+      const pctClass = idx.pctFromMA >= 0 ? 'above' : 'below';
+      const pctSign = idx.pctFromMA >= 0 ? '+' : '';
+      const updated = idx.lastUpdated ? new Date(idx.lastUpdated).toLocaleTimeString() : '—';
+      return `<div class="index-card">
+        <div class="idx-left">
+          <div class="idx-name">${idx.name}</div>
+          <div class="idx-symbol">${idx.symbol}</div>
+          <div class="idx-price">$${fmt(idx.price)}</div>
+          <div class="idx-change ${changeClass}">${changeSign}${fmt(idx.change)} (${changeSign}${fmt(idx.changePercent)}%)</div>
+        </div>
+        <div class="idx-right">
+          <div class="idx-ma-label">200-Week MA</div>
+          <div class="idx-ma-value">$${fmt(idx.ma200w)}</div>
+          <div class="idx-pct ${pctClass}">${pctSign}${fmt(idx.pctFromMA)}%</div>
+          <div class="idx-updated">${updated}</div>
+        </div>
+      </div>`;
+    }).join('');
   }
 
   // --- Filtering & Sorting ---

@@ -31,6 +31,10 @@ export function createServer(opts = {}) {
     res.json(tracker.getSnapshot());
   });
 
+  app.get('/api/indexes', (_req, res) => {
+    res.json({ timestamp: new Date().toISOString(), indexes: Array.from(tracker.indexes.values()) });
+  });
+
   app.get('/api/all', (_req, res) => {
     const all = Array.from(tracker.all.values()).sort(
       (a, b) => a.pctFromMA - b.pctFromMA
