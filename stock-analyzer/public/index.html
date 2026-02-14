@@ -324,7 +324,7 @@
   function handleMessage(msg) {
     switch (msg.type) {
       case 'update':
-        currentData = msg.data.stocks || [];
+        currentData = msg.data.stocks || msg.data.flagged || [];
         currentIndexes = msg.data.indexes || [];
         // Merge index tickers into the table data so they show as rows
         for (const idx of currentIndexes) {

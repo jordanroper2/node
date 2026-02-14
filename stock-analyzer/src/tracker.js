@@ -206,6 +206,7 @@ export class StockTracker extends EventEmitter {
       totalAnalyzed: this.all.size,
       totalFlagged: this.flagged.size,
       stocks: allArr,
+      flagged: allArr, // kept for backward compat with any cached HTML
       indexes: Array.from(this.indexes.values()),
     };
   }
