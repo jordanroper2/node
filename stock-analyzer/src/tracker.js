@@ -8,6 +8,11 @@ const INDEX_TICKERS = [
   { symbol: '^IXIC', name: 'NASDAQ Composite Index', indexes: ['Index'] },
 ];
 
+const CRYPTO_TICKERS = [
+  { symbol: 'BTC-USD', name: 'Bitcoin', indexes: ['Crypto'] },
+  { symbol: 'ETH-USD', name: 'Ethereum', indexes: ['Crypto'] },
+];
+
 export class StockTracker extends EventEmitter {
   constructor(opts = {}) {
     super();
@@ -18,8 +23,8 @@ export class StockTracker extends EventEmitter {
     this.batchSize = opts.batchSize || 5;
     this.delayMs = opts.delayMs || 600;
 
-    // Build the master list and include the 3 major index tickers
-    this.masterList = [...buildMasterList(), ...INDEX_TICKERS];
+    // Build the master list and include index + crypto tickers
+    this.masterList = [...buildMasterList(), ...INDEX_TICKERS, ...CRYPTO_TICKERS];
     // Map<symbol, entry> for stocks currently at or below 200w MA
     this.flagged = new Map();
     // Map<symbol, entry> for all analyzed stocks (above or below)

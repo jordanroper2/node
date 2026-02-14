@@ -186,6 +186,7 @@
     .index-tag.sp500 { background: rgba(63, 185, 80, 0.15); color: var(--green); }
     .index-tag.nasdaq { background: rgba(88, 166, 255, 0.15); color: var(--blue); }
     .index-tag.idx { background: rgba(248, 81, 73, 0.15); color: var(--red); }
+    .index-tag.crypto { background: rgba(210, 153, 34, 0.15); color: #f7931a; }
     .price-up { color: var(--green); }
     .price-down { color: var(--red); }
     .below-ma { color: var(--red); font-weight: 700; }
@@ -244,6 +245,7 @@
     <option value="S&P 500">S&amp;P 500</option>
     <option value="NASDAQ-100">NASDAQ-100</option>
     <option value="Index">Index Tickers</option>
+    <option value="Crypto">Crypto</option>
   </select>
   <select id="maFilter">
     <option value="all">All Stocks</option>
@@ -487,7 +489,7 @@
         const maClass = s.atOrBelowMA ? 'below-ma' : 'above-ma';
         const indexTags = (s.indexes || [])
           .map((idx) => {
-            const cls = idx === 'DJIA' ? 'djia' : idx === 'S&P 500' ? 'sp500' : idx === 'Index' ? 'idx' : 'nasdaq';
+            const cls = idx === 'DJIA' ? 'djia' : idx === 'S&P 500' ? 'sp500' : idx === 'Index' ? 'idx' : idx === 'Crypto' ? 'crypto' : 'nasdaq';
             return `<span class="index-tag ${cls}">${idx}</span>`;
           })
           .join('');
