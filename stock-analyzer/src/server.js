@@ -12,8 +12,14 @@ export function createServer(opts = {}) {
   const app = express();
   const server = http.createServer(app);
 
-  // Serve static dashboard files
-  app.use(express.static(path.join(__dirname, '..', 'public')));
+  // Serve static dashboard files — disable caching so changes appear immediately
+  app.use(express.static(path.join(__dirname, '..', 'public'), {
+    etag: false,
+    lastModified: false,
+    setHeaders(res) {
+      res.set('Cache-Control', 'no-store');
+    },
+  }));
 
   // WebSocket for live updates
   const wss = new WebSocketServer({ server });
