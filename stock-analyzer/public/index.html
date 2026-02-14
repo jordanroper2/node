@@ -185,6 +185,7 @@
     .index-tag.djia { background: rgba(210, 153, 34, 0.15); color: var(--yellow); }
     .index-tag.sp500 { background: rgba(63, 185, 80, 0.15); color: var(--green); }
     .index-tag.nasdaq { background: rgba(88, 166, 255, 0.15); color: var(--blue); }
+    .index-tag.idx { background: rgba(248, 81, 73, 0.15); color: var(--red); }
     .price-up { color: var(--green); }
     .price-down { color: var(--red); }
     .below-ma { color: var(--red); font-weight: 700; }
@@ -242,6 +243,7 @@
     <option value="DJIA">DJIA</option>
     <option value="S&P 500">S&amp;P 500</option>
     <option value="NASDAQ-100">NASDAQ-100</option>
+    <option value="Index">Index Tickers</option>
   </select>
   <select id="maFilter">
     <option value="all">All Stocks</option>
@@ -324,10 +326,13 @@
       case 'update':
         currentData = msg.data.stocks || [];
         currentIndexes = msg.data.indexes || [];
+        // Merge index tickers into the table data so they show as rows
+        for (const idx of currentIndexes) {
+          currentData.push({ ...idx, indexes: ['Index'] });
+        }
         $('totalTracked').textContent = msg.data.totalAnalyzed || '—';
         $('totalFlagged').textContent = msg.data.totalFlagged || '0';
         $('totalAbove').textContent = (msg.data.totalAnalyzed || 0) - (msg.data.totalFlagged || 0);
-        updateIndexCounts();
         renderIndexCards();
         $('lastUpdated').textContent = msg.data.timestamp
           ? '· ' + new Date(msg.data.timestamp).toLocaleTimeString()
@@ -355,10 +360,6 @@
         $('statusText').textContent = msg.data.message;
         break;
     }
-  }
-
-  function updateIndexCounts() {
-    // no-op — removed per-index flagged cards
   }
 
   function renderIndexCards() {
@@ -457,9 +458,9 @@
         const changeClass = s.change >= 0 ? 'price-up' : 'price-down';
         const changeSign = s.change >= 0 ? '+' : '';
         const maClass = s.atOrBelowMA ? 'below-ma' : 'above-ma';
-        const indexTags = s.indexes
+        const indexTags = (s.indexes || [])
           .map((idx) => {
-            const cls = idx === 'DJIA' ? 'djia' : idx === 'S&P 500' ? 'sp500' : 'nasdaq';
+            const cls = idx === 'DJIA' ? 'djia' : idx === 'S&P 500' ? 'sp500' : idx === 'Index' ? 'idx' : 'nasdaq';
             return `<span class="index-tag ${cls}">${idx}</span>`;
           })
           .join('');
