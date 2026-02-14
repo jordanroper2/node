@@ -76,7 +76,7 @@ export async function fetchStockData(symbol) {
 
   // --- Quote data from chart meta ---
   const price = meta.regularMarketPrice ?? null;
-  const previousClose = meta.previousClose ?? meta.chartPreviousClose ?? null;
+  const previousClose = meta.previousClose ?? null;
   const quoteData = {
     price,
     change: price != null && previousClose != null ? Math.round((price - previousClose) * 100) / 100 : null,
@@ -115,7 +115,7 @@ export async function fetchQuote(symbol) {
   if (!meta) throw new Error(`No chart data for ${symbol}`);
 
   const price = meta.regularMarketPrice ?? null;
-  const previousClose = meta.previousClose ?? meta.chartPreviousClose ?? null;
+  const previousClose = meta.previousClose ?? null;
 
   return {
     price,
