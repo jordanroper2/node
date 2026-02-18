@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>M&A Pipeline Tracker — Origination</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-left">
+        <h1>M&amp;A Pipeline Tracker</h1>
+        <span class="header-sub">Origination Stage</span>
+      </div>
+      <button class="btn btn-primary" id="addCompanyBtn">+ Add Company</button>
+    </div>
+  </header>
+
+  <!-- Stats bar -->
+  <div class="stats-bar">
+    <div class="stat" id="stat-total"><span class="stat-num">0</span><span class="stat-label">Total</span></div>
+    <div class="stat" id="stat-pre-qual"><span class="stat-num">0</span><span class="stat-label">Pre-Qualification</span></div>
+    <div class="stat" id="stat-info-req"><span class="stat-num">0</span><span class="stat-label">Info Requested</span></div>
+    <div class="stat" id="stat-site-visit"><span class="stat-num">0</span><span class="stat-label">Site Visit</span></div>
+    <div class="stat" id="stat-prelim-dd"><span class="stat-num">0</span><span class="stat-label">Prelim DD</span></div>
+    <div class="stat" id="stat-qual"><span class="stat-num">0</span><span class="stat-label">Qualification</span></div>
+    <div class="stat" id="stat-approved"><span class="stat-num">0</span><span class="stat-label">Stage Gate</span></div>
+  </div>
+
+  <!-- Pipeline Board -->
+  <main class="pipeline-wrapper">
+    <div class="pipeline-board" id="pipelineBoard">
+      <!-- Columns injected by JS -->
+    </div>
+  </main>
+
+  <!-- Add/Edit Company Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modalTitle">Add Company</h2>
+        <button class="modal-close" id="modalClose">&times;</button>
+      </div>
+      <form id="companyForm" autocomplete="off">
+        <input type="hidden" id="companyId" />
+
+        <div class="form-section-title">Company Information</div>
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label for="name">Company Name <span class="required">*</span></label>
+            <input type="text" id="name" name="name" required placeholder="e.g. Acme Corp" />
+          </div>
+          <div class="form-group">
+            <label for="company_type">Company Type</label>
+            <select id="company_type" name="company_type">
+              <option value="">-- Select --</option>
+              <option>Platform</option>
+              <option>Add-On</option>
+              <option>Strategic Target</option>
+              <option>Bolt-On</option>
+              <option>Carve-Out</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="stage">Pipeline Stage</label>
+            <select id="stage" name="stage">
+              <option value="Pre-Qualification">Pre-Qualification</option>
+              <option value="Information Requested">Information Requested</option>
+              <option value="Site Visit Completed">Site Visit Completed</option>
+              <option value="Preliminary Due Diligence">Preliminary Due Diligence</option>
+              <option value="Qualification">Qualification</option>
+              <option value="Stage Gate Approval">Stage Gate Approval</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="city">City</label>
+            <input type="text" id="city" name="city" placeholder="e.g. Austin" />
+          </div>
+          <div class="form-group">
+            <label for="state">State</label>
+            <select id="state" name="state">
+              <option value="">-- Select --</option>
+              <option>AL</option><option>AK</option><option>AZ</option><option>AR</option>
+              <option>CA</option><option>CO</option><option>CT</option><option>DE</option>
+              <option>FL</option><option>GA</option><option>HI</option><option>ID</option>
+              <option>IL</option><option>IN</option><option>IA</option><option>KS</option>
+              <option>KY</option><option>LA</option><option>ME</option><option>MD</option>
+              <option>MA</option><option>MI</option><option>MN</option><option>MS</option>
+              <option>MO</option><option>MT</option><option>NE</option><option>NV</option>
+              <option>NH</option><option>NJ</option><option>NM</option><option>NY</option>
+              <option>NC</option><option>ND</option><option>OH</option><option>OK</option>
+              <option>OR</option><option>PA</option><option>RI</option><option>SC</option>
+              <option>SD</option><option>TN</option><option>TX</option><option>UT</option>
+              <option>VT</option><option>VA</option><option>WA</option><option>WV</option>
+              <option>WI</option><option>WY</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="website">Website</label>
+            <input type="text" id="website" name="website" placeholder="e.g. acmecorp.com" />
+          </div>
+        </div>
+
+        <div class="form-section-title">Financial Information</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="revenue">Revenue</label>
+            <input type="text" id="revenue" name="revenue" placeholder="e.g. $10M" />
+          </div>
+          <div class="form-group">
+            <label for="ebitda">EBITDA</label>
+            <input type="text" id="ebitda" name="ebitda" placeholder="e.g. $2M" />
+          </div>
+          <div class="form-group">
+            <label for="employees">Employees</label>
+            <input type="text" id="employees" name="employees" placeholder="e.g. 50" />
+          </div>
+        </div>
+
+        <div class="form-section-title">Contact Information</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="contact_name">Contact Name</label>
+            <input type="text" id="contact_name" name="contact_name" placeholder="e.g. Jane Smith" />
+          </div>
+          <div class="form-group">
+            <label for="contact_email">Contact Email</label>
+            <input type="email" id="contact_email" name="contact_email" placeholder="e.g. jane@acme.com" />
+          </div>
+          <div class="form-group">
+            <label for="contact_phone">Contact Phone</label>
+            <input type="text" id="contact_phone" name="contact_phone" placeholder="e.g. (555) 123-4567" />
+          </div>
+        </div>
+
+        <div class="form-section-title">Notes</div>
+        <div class="form-group full-width">
+          <textarea id="notes" name="notes" rows="3" placeholder="Additional notes, deal thesis, sourcing channel, etc."></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="cancelBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="saveBtn">Save Company</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Company Detail Modal -->
+  <div class="modal-overlay" id="detailOverlay">
+    <div class="modal modal-detail">
+      <div class="modal-header">
+        <h2 id="detailName"></h2>
+        <button class="modal-close" id="detailClose">&times;</button>
+      </div>
+      <div id="detailBody"></div>
+      <div class="form-actions">
+        <button class="btn btn-danger" id="detailDelete">Delete</button>
+        <button class="btn btn-secondary" id="detailEdit">Edit</button>
+        <button class="btn btn-primary" id="detailClose2">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
