@@ -142,7 +142,7 @@ function openDetail(id) {
     <span class="detail-stage-badge" style="background:${stageColor}">${esc(c.stage)}</span>
     <div class="detail-grid">
       ${detailItem('Company Type', c.company_type)}
-      ${detailItem('Location', [c.city, c.state].filter(Boolean).join(', '))}
+      ${detailItem('Address', formatAddress(c))}
       ${detailItem('Website', c.website)}
       ${detailItem('Employees', c.employees)}
       ${detailItem('Revenue', c.revenue)}
@@ -207,7 +207,7 @@ function openEditModal(id) {
   document.getElementById('saveBtn').textContent = 'Save Changes';
   document.getElementById('companyId').value = id;
 
-  const fields = ['name', 'company_type', 'state', 'city', 'website', 'revenue', 'ebitda', 'employees', 'contact_name', 'contact_email', 'contact_phone', 'stage', 'notes'];
+  const fields = ['name', 'company_type', 'street_address', 'city', 'state', 'zip', 'website', 'revenue', 'ebitda', 'employees', 'contact_name', 'contact_email', 'contact_phone', 'stage', 'notes'];
   fields.forEach(f => {
     const el = document.getElementById(f);
     if (el) el.value = c[f] || '';
@@ -277,6 +277,14 @@ document.getElementById('detailOverlay').addEventListener('click', e => {
 });
 
 // ===== Utilities =====
+function formatAddress(c) {
+  const line1 = c.street_address || '';
+  const line2 = [c.city, c.state].filter(Boolean).join(', ');
+  const line3 = c.zip || '';
+  const parts = [line1, line2, line3].filter(Boolean);
+  return parts.length ? parts.join(', ') : '';
+}
+
 function esc(str) {
   if (!str) return '';
   return String(str)

@@ -14,8 +14,10 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     company_type TEXT,
-    state TEXT,
+    street_address TEXT,
     city TEXT,
+    state TEXT,
+    zip TEXT,
     contact_name TEXT,
     contact_email TEXT,
     contact_phone TEXT,
@@ -29,6 +31,11 @@ db.exec(`
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )
 `);
+
+// Migrations: add new columns to existing databases
+const existingCols = db.pragma('table_info(companies)').map(col => col.name);
+if (!existingCols.includes('street_address')) db.exec('ALTER TABLE companies ADD COLUMN street_address TEXT');
+if (!existingCols.includes('zip')) db.exec('ALTER TABLE companies ADD COLUMN zip TEXT');
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public'), {
@@ -55,7 +62,7 @@ app.get('/api/companies/:id', (req, res) => {
 // POST create company
 app.post('/api/companies', (req, res) => {
   const {
-    name, company_type, state, city,
+    name, company_type, street_address, city, state, zip,
     contact_name, contact_email, contact_phone,
     revenue, ebitda, employees, website,
     stage, notes
@@ -64,10 +71,10 @@ app.post('/api/companies', (req, res) => {
   if (!name) return res.status(400).json({ error: 'Company name is required' });
 
   const result = db.prepare(`
-    INSERT INTO companies (name, company_type, state, city, contact_name, contact_email, contact_phone, revenue, ebitda, employees, website, stage, notes)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO companies (name, company_type, street_address, city, state, zip, contact_name, contact_email, contact_phone, revenue, ebitda, employees, website, stage, notes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
-    name, company_type, state, city,
+    name, company_type, street_address, city, state, zip,
     contact_name, contact_email, contact_phone,
     revenue, ebitda, employees, website,
     stage || 'Pre-Qualification', notes
@@ -83,7 +90,7 @@ app.patch('/api/companies/:id', (req, res) => {
   if (!company) return res.status(404).json({ error: 'Company not found' });
 
   const fields = [
-    'name', 'company_type', 'state', 'city',
+    'name', 'company_type', 'street_address', 'city', 'state', 'zip',
     'contact_name', 'contact_email', 'contact_phone',
     'revenue', 'ebitda', 'employees', 'website',
     'stage', 'notes'
