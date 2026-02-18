@@ -107,11 +107,96 @@ body {
   white-space: nowrap;
 }
 
+/* ===== Filter Bar ===== */
+.filter-bar {
+  background: var(--white);
+  border-bottom: 1px solid var(--gray-200, #e5e7eb);
+  padding: 10px 24px;
+  position: sticky;
+  top: 64px;
+  z-index: 90;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.filter-bar-inner {
+  max-width: 1600px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-input {
+  padding: 7px 10px;
+  border: 1px solid var(--gray-300);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: var(--gray-900);
+  background: var(--gray-50);
+  width: 280px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.filter-input:focus {
+  outline: none;
+  border-color: var(--blue-500);
+  box-shadow: 0 0 0 3px rgba(37,99,168,0.12);
+  background: var(--white);
+}
+
+.filter-select {
+  padding: 7px 28px 7px 10px;
+  border: 1px solid var(--gray-300);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: var(--gray-900);
+  background: var(--gray-50);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--blue-500);
+  box-shadow: 0 0 0 3px rgba(37,99,168,0.12);
+  background-color: var(--white);
+}
+
+.btn-filter-clear {
+  background: var(--gray-100);
+  color: var(--gray-700);
+  border: 1px solid var(--gray-300);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.btn-filter-clear:hover {
+  background: var(--gray-200, #e5e7eb);
+}
+
+.filter-result-count {
+  font-size: 0.78rem;
+  color: var(--gray-500);
+  margin-left: 4px;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
 /* ===== Pipeline Board ===== */
 .pipeline-wrapper {
   overflow-x: auto;
   padding: 24px;
-  min-height: calc(100vh - 130px);
+  min-height: calc(100vh - 175px);
 }
 
 .pipeline-board {

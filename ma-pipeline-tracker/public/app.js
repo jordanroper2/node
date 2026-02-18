@@ -12,6 +12,20 @@ const STAGES = [
 let companies = [];
 let editingId = null;
 let detailId = null;
+const filters = { search: '', state: '', company_type: '' };
+
+function getFilteredCompanies() {
+  return companies.filter(c => {
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      const haystack = [c.name, c.city, c.state, c.contact_name].filter(Boolean).join(' ').toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    if (filters.state && c.state !== filters.state) return false;
+    if (filters.company_type && c.company_type !== filters.company_type) return false;
+    return true;
+  });
+}
 
 // ===== API helpers =====
 async function api(method, path, body) {
@@ -31,30 +45,44 @@ async function loadCompanies() {
 
 // ===== Render =====
 function render() {
-  renderBoard();
-  renderStats();
+  const filtered = getFilteredCompanies();
+  renderBoard(filtered);
+  renderStats(filtered);
+  updateFilterUI(filtered);
 }
 
-function renderStats() {
-  document.querySelector('#stat-total .stat-num').textContent   = companies.length;
-  document.querySelector('#stat-pre-qual .stat-num').textContent = count('Pre-Qualification');
-  document.querySelector('#stat-info-req .stat-num').textContent = count('Information Requested');
-  document.querySelector('#stat-site-visit .stat-num').textContent = count('Site Visit Completed');
-  document.querySelector('#stat-prelim-dd .stat-num').textContent = count('Preliminary Due Diligence');
-  document.querySelector('#stat-qual .stat-num').textContent    = count('Qualification');
-  document.querySelector('#stat-approved .stat-num').textContent = count('Stage Gate Approval');
+function renderStats(filtered) {
+  document.querySelector('#stat-total .stat-num').textContent     = filtered.length;
+  document.querySelector('#stat-pre-qual .stat-num').textContent  = countIn(filtered, 'Pre-Qualification');
+  document.querySelector('#stat-info-req .stat-num').textContent  = countIn(filtered, 'Information Requested');
+  document.querySelector('#stat-site-visit .stat-num').textContent = countIn(filtered, 'Site Visit Completed');
+  document.querySelector('#stat-prelim-dd .stat-num').textContent = countIn(filtered, 'Preliminary Due Diligence');
+  document.querySelector('#stat-qual .stat-num').textContent      = countIn(filtered, 'Qualification');
+  document.querySelector('#stat-approved .stat-num').textContent  = countIn(filtered, 'Stage Gate Approval');
 }
 
-function count(stage) {
-  return companies.filter(c => c.stage === stage).length;
+function countIn(arr, stage) {
+  return arr.filter(c => c.stage === stage).length;
 }
 
-function renderBoard() {
+function updateFilterUI(filtered) {
+  const hasFilters = filters.search || filters.state || filters.company_type;
+  document.getElementById('clearFiltersBtn').style.display = hasFilters ? '' : 'none';
+  const countEl = document.getElementById('filterResultCount');
+  if (hasFilters) {
+    countEl.textContent = `${filtered.length} of ${companies.length} shown`;
+    countEl.style.display = '';
+  } else {
+    countEl.style.display = 'none';
+  }
+}
+
+function renderBoard(filtered) {
   const board = document.getElementById('pipelineBoard');
   board.innerHTML = '';
 
   STAGES.forEach(stage => {
-    const stageCompanies = companies.filter(c => c.stage === stage.key);
+    const stageCompanies = filtered.filter(c => c.stage === stage.key);
 
     const col = document.createElement('div');
     col.className = 'stage-col';
@@ -261,6 +289,32 @@ function esc(str) {
 function slugify(str) {
   return str.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 }
+
+// ===== Filters =====
+document.getElementById('filterSearch').addEventListener('input', e => {
+  filters.search = e.target.value.trim();
+  render();
+});
+
+document.getElementById('filterState').addEventListener('change', e => {
+  filters.state = e.target.value;
+  render();
+});
+
+document.getElementById('filterType').addEventListener('change', e => {
+  filters.company_type = e.target.value;
+  render();
+});
+
+document.getElementById('clearFiltersBtn').addEventListener('click', () => {
+  filters.search = '';
+  filters.state = '';
+  filters.company_type = '';
+  document.getElementById('filterSearch').value = '';
+  document.getElementById('filterState').value = '';
+  document.getElementById('filterType').value = '';
+  render();
+});
 
 // ===== Init =====
 loadCompanies();

@@ -28,6 +28,40 @@
     <div class="stat" id="stat-approved"><span class="stat-num">0</span><span class="stat-label">Stage Gate</span></div>
   </div>
 
+  <!-- Filter Bar -->
+  <div class="filter-bar" id="filterBar">
+    <div class="filter-bar-inner">
+      <input type="text" id="filterSearch" class="filter-input" placeholder="&#128269; Search by name, city, or contact..." />
+      <select id="filterState" class="filter-select">
+        <option value="">All States</option>
+        <option>AL</option><option>AK</option><option>AZ</option><option>AR</option>
+        <option>CA</option><option>CO</option><option>CT</option><option>DE</option>
+        <option>FL</option><option>GA</option><option>HI</option><option>ID</option>
+        <option>IL</option><option>IN</option><option>IA</option><option>KS</option>
+        <option>KY</option><option>LA</option><option>ME</option><option>MD</option>
+        <option>MA</option><option>MI</option><option>MN</option><option>MS</option>
+        <option>MO</option><option>MT</option><option>NE</option><option>NV</option>
+        <option>NH</option><option>NJ</option><option>NM</option><option>NY</option>
+        <option>NC</option><option>ND</option><option>OH</option><option>OK</option>
+        <option>OR</option><option>PA</option><option>RI</option><option>SC</option>
+        <option>SD</option><option>TN</option><option>TX</option><option>UT</option>
+        <option>VT</option><option>VA</option><option>WA</option><option>WV</option>
+        <option>WI</option><option>WY</option>
+      </select>
+      <select id="filterType" class="filter-select">
+        <option value="">All Types</option>
+        <option>Platform</option>
+        <option>Add-On</option>
+        <option>Strategic Target</option>
+        <option>Bolt-On</option>
+        <option>Carve-Out</option>
+        <option>Other</option>
+      </select>
+      <button class="btn btn-filter-clear" id="clearFiltersBtn" style="display:none">&#10005; Clear</button>
+      <span class="filter-result-count" id="filterResultCount" style="display:none"></span>
+    </div>
+  </div>
+
   <!-- Pipeline Board -->
   <main class="pipeline-wrapper">
     <div class="pipeline-board" id="pipelineBoard">
