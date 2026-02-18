@@ -1,12 +1,19 @@
 const express = require('express');
 const Database = require('better-sqlite3');
 const path = require('path');
+const crypto = require('crypto');
+const cookieParser = require('cookie-parser');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Initialize database
-const db = new Database(path.join(__dirname, 'pipeline.db'));
+// Auth config
+const PASSWORD = 'jordanroper';
+const AUTH_COOKIE = 'ma_auth';
+const AUTH_VALUE = crypto.createHash('sha256').update(PASSWORD).digest('hex');
+
+// Initialize database (DB_PATH env var lets Railway point to a persistent volume)
+const db = new Database(process.env.DB_PATH || path.join(__dirname, 'pipeline.db'));
 
 // Create tables
 db.exec(`
@@ -38,6 +45,38 @@ if (!existingCols.includes('street_address')) db.exec('ALTER TABLE companies ADD
 if (!existingCols.includes('zip')) db.exec('ALTER TABLE companies ADD COLUMN zip TEXT');
 
 app.use(express.json());
+app.use(cookieParser());
+
+// ===== Public routes (no auth required) =====
+
+app.get('/login', (req, res) => {
+  if (req.cookies[AUTH_COOKIE] === AUTH_VALUE) return res.redirect('/');
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+app.post('/api/login', (req, res) => {
+  if (req.body.password === PASSWORD) {
+    res.cookie(AUTH_COOKIE, AUTH_VALUE, { httpOnly: true, sameSite: 'strict' });
+    return res.json({ ok: true });
+  }
+  res.status(401).json({ error: 'Incorrect password' });
+});
+
+app.post('/api/logout', (req, res) => {
+  res.clearCookie(AUTH_COOKIE);
+  res.json({ ok: true });
+});
+
+// ===== Auth middleware — protects everything below =====
+
+app.use((req, res, next) => {
+  if (req.cookies[AUTH_COOKIE] === AUTH_VALUE) return next();
+  if (req.path.startsWith('/api/')) return res.status(401).json({ error: 'Unauthorized' });
+  res.redirect('/login');
+});
+
+// ===== Protected: static files =====
+
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders(res, filePath) {
     if (filePath.endsWith('.html')) {
@@ -45,6 +84,8 @@ app.use(express.static(path.join(__dirname, 'public'), {
     }
   }
 }));
+
+// ===== Protected: API routes =====
 
 // GET all companies
 app.get('/api/companies', (req, res) => {

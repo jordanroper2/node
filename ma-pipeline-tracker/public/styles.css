@@ -70,6 +70,12 @@ body {
   letter-spacing: 0.07em;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 /* ===== Stats Bar ===== */
 .stats-bar {
   background: var(--blue-700);

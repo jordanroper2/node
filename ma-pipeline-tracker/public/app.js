@@ -34,6 +34,7 @@ async function api(method, path, body) {
     headers: body ? { 'Content-Type': 'application/json' } : {},
     body: body ? JSON.stringify(body) : undefined,
   });
+  if (res.status === 401) { window.location.href = '/login'; return; }
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
@@ -322,6 +323,12 @@ document.getElementById('clearFiltersBtn').addEventListener('click', () => {
   document.getElementById('filterState').value = '';
   document.getElementById('filterType').value = '';
   render();
+});
+
+// ===== Logout =====
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await fetch('/api/logout', { method: 'POST' });
+  window.location.href = '/login';
 });
 
 // ===== Init =====
