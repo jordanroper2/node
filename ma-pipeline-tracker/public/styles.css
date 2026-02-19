@@ -25,6 +25,7 @@
   --stage-4: #14b8a6;  /* Preliminary Due Diligence */
   --stage-5: #22c55e;  /* Qualification */
   --stage-6: #f59e0b;  /* Stage Gate Approval */
+  --stage-7: #10b981;  /* Closed */
 }
 
 body {
@@ -327,6 +328,7 @@ body {
 .company-card[data-stage="Preliminary Due Diligence"] { border-left: 3px solid var(--stage-4); }
 .company-card[data-stage="Qualification"]           { border-left: 3px solid var(--stage-5); }
 .company-card[data-stage="Stage Gate Approval"]     { border-left: 3px solid var(--stage-6); }
+.company-card[data-stage="Closed"]                  { border-left: 3px solid var(--stage-7); }
 
 .empty-col {
   text-align: center;
@@ -570,6 +572,8 @@ form { padding: 20px 24px; }
 .stage-btn[data-stage="Qualification"].active     { background: var(--stage-5); }
 .stage-btn[data-stage="Stage Gate Approval"]      { border-color: var(--stage-6); color: var(--stage-6); }
 .stage-btn[data-stage="Stage Gate Approval"].active { background: var(--stage-6); }
+.stage-btn[data-stage="Closed"]                   { border-color: var(--stage-7); color: var(--stage-7); }
+.stage-btn[data-stage="Closed"].active            { background: var(--stage-7); }
 
 /* ===== Map View Button ===== */
 .btn-map {

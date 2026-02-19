@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>M&A Pipeline Tracker — Origination</title>
-  <link rel="stylesheet" href="styles.css?v=4" />
+  <link rel="stylesheet" href="styles.css?v=5" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
@@ -31,6 +31,7 @@
     <div class="stat" id="stat-prelim-dd"><span class="stat-num">0</span><span class="stat-label">Prelim DD</span></div>
     <div class="stat" id="stat-qual"><span class="stat-num">0</span><span class="stat-label">Qualification</span></div>
     <div class="stat" id="stat-approved"><span class="stat-num">0</span><span class="stat-label">Stage Gate</span></div>
+    <div class="stat" id="stat-closed"><span class="stat-num">0</span><span class="stat-label">Closed</span></div>
   </div>
 
   <!-- Filter Bar -->
@@ -125,6 +126,7 @@
               <option value="Preliminary Due Diligence">Preliminary Due Diligence</option>
               <option value="Qualification">Qualification</option>
               <option value="Stage Gate Approval">Stage Gate Approval</option>
+              <option value="Closed">Closed</option>
             </select>
           </div>
           <div class="form-group full-width">
@@ -226,6 +228,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>

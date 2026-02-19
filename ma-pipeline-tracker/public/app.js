@@ -7,6 +7,7 @@ const STAGES = [
   { key: 'Preliminary Due Diligence', color: '#14b8a6' },
   { key: 'Qualification',           color: '#22c55e' },
   { key: 'Stage Gate Approval',     color: '#f59e0b' },
+  { key: 'Closed',                  color: '#10b981' },
 ];
 
 let companies = [];
@@ -60,6 +61,7 @@ function renderStats(filtered) {
   document.querySelector('#stat-prelim-dd .stat-num').textContent = countIn(filtered, 'Preliminary Due Diligence');
   document.querySelector('#stat-qual .stat-num').textContent      = countIn(filtered, 'Qualification');
   document.querySelector('#stat-approved .stat-num').textContent  = countIn(filtered, 'Stage Gate Approval');
+  document.querySelector('#stat-closed .stat-num').textContent    = countIn(filtered, 'Closed');
 }
 
 function countIn(arr, stage) {
