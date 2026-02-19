@@ -145,6 +145,8 @@ function openDetail(id) {
     <span class="detail-stage-badge" style="background:${stageColor}">${esc(c.stage)}</span>
     <div class="detail-grid">
       ${detailItem('Company Type', c.company_type)}
+      ${detailItem('NDA', c.nda)}
+      ${detailItem('Opportunity Owner', c.opportunity_owner)}
       ${detailItem('Address', formatAddress(c))}
       ${detailItem('Website', c.website)}
       ${detailItem('Employees', c.employees)}
@@ -244,7 +246,7 @@ function openEditModal(id) {
   document.getElementById('saveBtn').textContent = 'Save Changes';
   document.getElementById('companyId').value = id;
 
-  const fields = ['name', 'company_type', 'street_address', 'city', 'state', 'zip', 'website', 'revenue', 'ebitda', 'employees', 'contact_name', 'contact_email', 'contact_phone', 'stage', 'notes'];
+  const fields = ['name', 'company_type', 'street_address', 'city', 'state', 'zip', 'website', 'nda', 'opportunity_owner', 'revenue', 'ebitda', 'employees', 'contact_name', 'contact_email', 'contact_phone', 'stage', 'notes'];
   fields.forEach(f => {
     const el = document.getElementById(f);
     if (el) el.value = c[f] || '';

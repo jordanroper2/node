@@ -60,6 +60,8 @@ db.exec(`
     website TEXT,
     stage TEXT NOT NULL DEFAULT 'Pre-Qualification',
     notes TEXT,
+    nda TEXT,
+    opportunity_owner TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )
@@ -69,6 +71,8 @@ db.exec(`
 const existingCols = db.pragma('table_info(companies)').map(col => col.name);
 if (!existingCols.includes('street_address')) db.exec('ALTER TABLE companies ADD COLUMN street_address TEXT');
 if (!existingCols.includes('zip')) db.exec('ALTER TABLE companies ADD COLUMN zip TEXT');
+if (!existingCols.includes('nda')) db.exec('ALTER TABLE companies ADD COLUMN nda TEXT');
+if (!existingCols.includes('opportunity_owner')) db.exec('ALTER TABLE companies ADD COLUMN opportunity_owner TEXT');
 
 app.use(express.json());
 app.use(cookieParser());
@@ -132,19 +136,19 @@ app.post('/api/companies', (req, res) => {
     name, company_type, street_address, city, state, zip,
     contact_name, contact_email, contact_phone,
     revenue, ebitda, employees, website,
-    stage, notes
+    stage, notes, nda, opportunity_owner
   } = req.body;
 
   if (!name) return res.status(400).json({ error: 'Company name is required' });
 
   const result = db.prepare(`
-    INSERT INTO companies (name, company_type, street_address, city, state, zip, contact_name, contact_email, contact_phone, revenue, ebitda, employees, website, stage, notes)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO companies (name, company_type, street_address, city, state, zip, contact_name, contact_email, contact_phone, revenue, ebitda, employees, website, stage, notes, nda, opportunity_owner)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     name, company_type, street_address, city, state, zip,
     contact_name, contact_email, contact_phone,
     revenue, ebitda, employees, website,
-    stage || 'Pre-Qualification', notes
+    stage || 'Pre-Qualification', notes, nda, opportunity_owner
   );
 
   const company = db.prepare('SELECT * FROM companies WHERE id = ?').get(result.lastInsertRowid);
@@ -160,7 +164,7 @@ app.patch('/api/companies/:id', (req, res) => {
     'name', 'company_type', 'street_address', 'city', 'state', 'zip',
     'contact_name', 'contact_email', 'contact_phone',
     'revenue', 'ebitda', 'employees', 'website',
-    'stage', 'notes'
+    'stage', 'notes', 'nda', 'opportunity_owner'
   ];
 
   const updates = {};
