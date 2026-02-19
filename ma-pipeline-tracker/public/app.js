@@ -1,13 +1,13 @@
 'use strict';
 
 const STAGES = [
-  { key: 'Pre-Qualification',       color: '#6366f1' },
-  { key: 'Information Requested',   color: '#3b82f6' },
-  { key: 'Site Visit Completed',    color: '#0ea5e9' },
-  { key: 'Preliminary Due Diligence', color: '#14b8a6' },
-  { key: 'Qualification',           color: '#22c55e' },
-  { key: 'Stage Gate Approval',     color: '#f59e0b' },
-  { key: 'Closed',                  color: '#10b981' },
+  { key: 'Pre-Qualification',         color: '#7c3aed' },  // violet
+  { key: 'Information Requested',     color: '#2563eb' },  // blue
+  { key: 'Site Visit Completed',      color: '#0891b2' },  // cyan
+  { key: 'Preliminary Due Diligence', color: '#f97316' },  // orange
+  { key: 'Qualification',             color: '#ca8a04' },  // yellow
+  { key: 'Stage Gate Approval',       color: '#dc2626' },  // red
+  { key: 'Closed',                    color: '#16a34a' },  // green
 ];
 
 let companies = [];

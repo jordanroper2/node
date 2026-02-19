@@ -19,13 +19,13 @@
   --white:    #ffffff;
 
   /* Stage colors */
-  --stage-1: #6366f1;  /* Pre-Qualification */
-  --stage-2: #3b82f6;  /* Information Requested */
-  --stage-3: #0ea5e9;  /* Site Visit Completed */
-  --stage-4: #14b8a6;  /* Preliminary Due Diligence */
-  --stage-5: #22c55e;  /* Qualification */
-  --stage-6: #f59e0b;  /* Stage Gate Approval */
-  --stage-7: #10b981;  /* Closed */
+  --stage-1: #7c3aed;  /* Pre-Qualification       — violet */
+  --stage-2: #2563eb;  /* Information Requested   — blue */
+  --stage-3: #0891b2;  /* Site Visit Completed    — cyan */
+  --stage-4: #f97316;  /* Preliminary Due Diligence — orange */
+  --stage-5: #ca8a04;  /* Qualification           — yellow */
+  --stage-6: #dc2626;  /* Stage Gate Approval     — red */
+  --stage-7: #16a34a;  /* Closed                  — green */
 }
 
 body {
