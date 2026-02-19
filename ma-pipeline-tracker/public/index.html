@@ -17,6 +17,7 @@
       <div class="header-actions">
         <button class="btn btn-primary" id="addCompanyBtn">+ Add Company</button>
         <button class="btn btn-map" id="mapViewBtn">&#128205; Map View</button>
+        <button class="btn btn-lost" id="lostViewBtn">Lost/Disqualified</button>
         <button class="btn btn-secondary" id="logoutBtn">Sign Out</button>
       </div>
     </div>
@@ -32,6 +33,7 @@
     <div class="stat" id="stat-qual"><span class="stat-num">0</span><span class="stat-label">Qualification</span></div>
     <div class="stat" id="stat-approved"><span class="stat-num">0</span><span class="stat-label">Stage Gate</span></div>
     <div class="stat" id="stat-closed"><span class="stat-num">0</span><span class="stat-label">Closed</span></div>
+    <div class="stat stat-lost-link" id="stat-lost"><span class="stat-num">0</span><span class="stat-label">Lost</span></div>
   </div>
 
   <!-- Filter Bar -->
@@ -89,6 +91,33 @@
     </div>
   </div>
 
+  <!-- Lost/Disqualified View -->
+  <div class="lost-wrapper" id="lostWrapper" style="display:none">
+    <div class="lost-inner">
+      <div class="lost-toolbar">
+        <input type="text" id="lostSearch" class="filter-input" placeholder="&#128269; Search lost opportunities..." />
+        <span class="lost-count" id="lostCount"></span>
+      </div>
+      <div class="lost-table-wrap">
+        <table class="lost-table">
+          <thead>
+            <tr>
+              <th>Company</th>
+              <th>Type</th>
+              <th>Location</th>
+              <th>Revenue</th>
+              <th>NDA</th>
+              <th>Opportunity Owner</th>
+              <th>Date Updated</th>
+            </tr>
+          </thead>
+          <tbody id="lostTableBody"></tbody>
+        </table>
+        <div id="lostEmpty" class="lost-empty" style="display:none">No lost/disqualified opportunities yet</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Add/Edit Company Modal -->
   <div class="modal-overlay" id="modalOverlay">
     <div class="modal">
@@ -127,6 +156,7 @@
               <option value="Qualification">Qualification</option>
               <option value="Stage Gate Approval">Stage Gate Approval</option>
               <option value="Closed">Closed</option>
+              <option value="Lost/Disqualified">Lost/Disqualified</option>
             </select>
           </div>
           <div class="form-group full-width">

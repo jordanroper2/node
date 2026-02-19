@@ -8,6 +8,7 @@ const STAGES = [
   { key: 'Qualification',             color: '#ca8a04' },  // yellow
   { key: 'Stage Gate Approval',       color: '#dc2626' },  // red
   { key: 'Closed',                    color: '#16a34a' },  // green
+  { key: 'Lost/Disqualified',         color: '#4b5563' },  // gray — separate list view
 ];
 
 let companies = [];
@@ -43,6 +44,7 @@ async function api(method, path, body) {
 async function loadCompanies() {
   companies = await api('GET', '/api/companies');
   render();
+  if (lostMode) renderLostView();
 }
 
 // ===== Render =====
@@ -62,6 +64,7 @@ function renderStats(filtered) {
   document.querySelector('#stat-qual .stat-num').textContent      = countIn(filtered, 'Qualification');
   document.querySelector('#stat-approved .stat-num').textContent  = countIn(filtered, 'Stage Gate Approval');
   document.querySelector('#stat-closed .stat-num').textContent    = countIn(filtered, 'Closed');
+  document.querySelector('#stat-lost .stat-num').textContent      = companies.filter(c => c.stage === 'Lost/Disqualified').length;
 }
 
 function countIn(arr, stage) {
@@ -85,6 +88,8 @@ function renderBoard(filtered) {
   board.innerHTML = '';
 
   STAGES.forEach(stage => {
+    if (stage.key === 'Lost/Disqualified') return; // shown in separate Lost view
+
     const stageCompanies = filtered.filter(c => c.stage === stage.key);
 
     const col = document.createElement('div');
@@ -409,6 +414,87 @@ function formatBytes(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
+// ===== Lost/Disqualified View =====
+let lostMode = false;
+let lostSearch = '';
+
+function openLostView() {
+  if (mapMode) closeMapView();
+  lostMode = true;
+  document.getElementById('pipelineWrapper').style.display = 'none';
+  document.getElementById('filterBar').style.display = 'none';
+  document.getElementById('lostWrapper').style.display = '';
+  document.getElementById('lostViewBtn').textContent = '\u2190 Board View';
+  renderLostView();
+}
+
+function closeLostView() {
+  lostMode = false;
+  document.getElementById('pipelineWrapper').style.display = '';
+  document.getElementById('filterBar').style.display = '';
+  document.getElementById('lostWrapper').style.display = 'none';
+  document.getElementById('lostViewBtn').textContent = 'Lost/Disqualified';
+}
+
+function renderLostView() {
+  const lost = companies.filter(c => c.stage === 'Lost/Disqualified');
+  const q = lostSearch.toLowerCase();
+  const filtered = q ? lost.filter(c =>
+    [c.name, c.city, c.state, c.contact_name, c.company_type, c.opportunity_owner]
+      .filter(Boolean).join(' ').toLowerCase().includes(q)
+  ) : lost;
+
+  const tbody = document.getElementById('lostTableBody');
+  const emptyEl = document.getElementById('lostEmpty');
+  const countEl = document.getElementById('lostCount');
+  const tableEl = tbody.closest('table');
+
+  countEl.textContent = `${filtered.length} ${filtered.length === 1 ? 'opportunity' : 'opportunities'}`;
+
+  if (!filtered.length) {
+    tbody.innerHTML = '';
+    tableEl.style.display = 'none';
+    emptyEl.style.display = '';
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+  tableEl.style.display = '';
+  tbody.innerHTML = filtered.map(c => {
+    const location = [c.city, c.state].filter(Boolean).join(', ');
+    const dateStr = new Date(c.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return `
+      <tr class="lost-row" data-id="${c.id}">
+        <td class="lost-name">${esc(c.name)}</td>
+        <td>${esc(c.company_type || '\u2014')}</td>
+        <td>${esc(location || '\u2014')}</td>
+        <td>${esc(c.revenue || '\u2014')}</td>
+        <td>${esc(c.nda || '\u2014')}</td>
+        <td>${esc(c.opportunity_owner || '\u2014')}</td>
+        <td>${dateStr}</td>
+      </tr>
+    `;
+  }).join('');
+
+  tbody.querySelectorAll('.lost-row').forEach(row => {
+    row.addEventListener('click', () => openDetail(Number(row.dataset.id)));
+  });
+}
+
+document.getElementById('lostViewBtn').addEventListener('click', () => {
+  if (lostMode) closeLostView();
+  else openLostView();
+});
+
+document.getElementById('lostSearch').addEventListener('input', e => {
+  lostSearch = e.target.value.trim();
+  renderLostView();
+});
+
+document.getElementById('stat-lost').addEventListener('click', () => {
+  if (!lostMode) openLostView();
+});
+
 // ===== Map View =====
 let mapInstance = null;
 let mapMode = false;
@@ -434,6 +520,7 @@ async function geocodeAddress(address) {
 }
 
 async function openMapView() {
+  if (lostMode) closeLostView();
   mapMode = true;
   document.getElementById('pipelineWrapper').style.display = 'none';
   document.getElementById('mapWrapper').style.display = 'flex';
