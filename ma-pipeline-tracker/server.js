@@ -11,8 +11,10 @@ const PORT = process.env.PORT || 3000;
 
 // Auth config
 const PASSWORD = 'jordanroper';
+const VIEW_PASSWORD = 'viewonly';
 const AUTH_COOKIE = 'ma_auth';
 const AUTH_VALUE = crypto.createHash('sha256').update(PASSWORD).digest('hex');
+const VIEW_AUTH_VALUE = crypto.createHash('sha256').update(VIEW_PASSWORD).digest('hex');
 
 // Initialize database (DB_PATH env var lets Railway point to a persistent volume)
 const DB_FILE = process.env.DB_PATH || path.join(__dirname, 'pipeline.db');
@@ -80,14 +82,19 @@ app.use(cookieParser());
 // ===== Public routes (no auth required) =====
 
 app.get('/login', (req, res) => {
-  if (req.cookies[AUTH_COOKIE] === AUTH_VALUE) return res.redirect('/');
+  const cookie = req.cookies[AUTH_COOKIE];
+  if (cookie === AUTH_VALUE || cookie === VIEW_AUTH_VALUE) return res.redirect('/');
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
 app.post('/api/login', (req, res) => {
   if (req.body.password === PASSWORD) {
     res.cookie(AUTH_COOKIE, AUTH_VALUE, { httpOnly: true, sameSite: 'strict' });
-    return res.json({ ok: true });
+    return res.json({ ok: true, role: 'admin' });
+  }
+  if (req.body.password === VIEW_PASSWORD) {
+    res.cookie(AUTH_COOKIE, VIEW_AUTH_VALUE, { httpOnly: true, sameSite: 'strict' });
+    return res.json({ ok: true, role: 'viewer' });
   }
   res.status(401).json({ error: 'Incorrect password' });
 });
@@ -100,9 +107,26 @@ app.post('/api/logout', (req, res) => {
 // ===== Auth middleware — protects everything below =====
 
 app.use((req, res, next) => {
-  if (req.cookies[AUTH_COOKIE] === AUTH_VALUE) return next();
+  const cookie = req.cookies[AUTH_COOKIE];
+  if (cookie === AUTH_VALUE || cookie === VIEW_AUTH_VALUE) return next();
   if (req.path.startsWith('/api/')) return res.status(401).json({ error: 'Unauthorized' });
   res.redirect('/login');
+});
+
+// ===== Who am I =====
+
+app.get('/api/me', (req, res) => {
+  const role = req.cookies[AUTH_COOKIE] === VIEW_AUTH_VALUE ? 'viewer' : 'admin';
+  res.json({ role });
+});
+
+// ===== Viewer write-block middleware =====
+
+app.use((req, res, next) => {
+  if (['POST', 'PATCH', 'DELETE'].includes(req.method) && req.cookies[AUTH_COOKIE] === VIEW_AUTH_VALUE) {
+    return res.status(403).json({ error: 'View-only access: modifications not permitted' });
+  }
+  next();
 });
 
 // ===== Protected: static files =====

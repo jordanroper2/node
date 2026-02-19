@@ -14,6 +14,7 @@ const STAGES = [
 let companies = [];
 let editingId = null;
 let detailId = null;
+let viewerMode = false;
 const filters = { search: '', state: '', company_type: '' };
 
 function getFilteredCompanies() {
@@ -164,7 +165,7 @@ function openDetail(id) {
     </div>
     ${c.notes ? `<div class="detail-notes">${esc(c.notes)}</div>` : ''}
 
-    <div class="stage-move-bar">
+    ${!viewerMode ? `<div class="stage-move-bar">
       <label>Move to Stage:</label>
       ${STAGES.map(s => `
         <button class="stage-btn ${s.key === c.stage ? 'active' : ''}" data-stage="${esc(s.key)}"
@@ -172,17 +173,19 @@ function openDetail(id) {
           ${esc(s.key)}
         </button>
       `).join('')}
-    </div>
+    </div>` : ''}
   `;
 
-  // Stage move buttons
-  body.querySelectorAll('.stage-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      await api('PATCH', `/api/companies/${id}`, { stage: btn.dataset.stage });
-      await loadCompanies();
-      openDetail(id); // refresh detail
+  // Stage move buttons (admin only)
+  if (!viewerMode) {
+    body.querySelectorAll('.stage-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        await api('PATCH', `/api/companies/${id}`, { stage: btn.dataset.stage });
+        await loadCompanies();
+        openDetail(id); // refresh detail
+      });
     });
-  });
+  }
 
   // Documents section
   const docsSection = document.createElement('div');
@@ -190,31 +193,33 @@ function openDetail(id) {
   docsSection.innerHTML = `
     <div class="docs-header">
       <span class="docs-section-title">Documents</span>
-      <label class="btn-doc-upload">
+      ${!viewerMode ? `<label class="btn-doc-upload">
         + Upload
         <input type="file" id="docFileInput" style="display:none" multiple>
-      </label>
+      </label>` : ''}
     </div>
     <div id="detailDocs"><em class="docs-empty">Loading...</em></div>
   `;
   body.appendChild(docsSection);
 
-  document.getElementById('docFileInput').addEventListener('change', async (e) => {
-    const files = Array.from(e.target.files);
-    if (!files.length) return;
-    for (const file of files) {
-      const fd = new FormData();
-      fd.append('file', file);
-      try {
-        const res = await fetch(`/api/companies/${id}/documents`, { method: 'POST', body: fd });
-        if (!res.ok) throw new Error(await res.text());
-      } catch (err) {
-        alert('Upload failed: ' + err.message);
+  if (!viewerMode) {
+    document.getElementById('docFileInput').addEventListener('change', async (e) => {
+      const files = Array.from(e.target.files);
+      if (!files.length) return;
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append('file', file);
+        try {
+          const res = await fetch(`/api/companies/${id}/documents`, { method: 'POST', body: fd });
+          if (!res.ok) throw new Error(await res.text());
+        } catch (err) {
+          alert('Upload failed: ' + err.message);
+        }
       }
-    }
-    e.target.value = '';
-    loadDocuments(id);
-  });
+      e.target.value = '';
+      loadDocuments(id);
+    });
+  }
 
   loadDocuments(id);
 
@@ -394,17 +399,19 @@ function renderDocuments(companyId, docs) {
       <span class="doc-name" title="${esc(doc.original_name)}">${esc(doc.original_name)}</span>
       <span class="doc-size">${formatBytes(doc.size)}</span>
       <a href="/api/documents/${doc.id}/download" class="btn-doc-action btn-doc-download" download="${esc(doc.original_name)}">Download</a>
-      <button class="btn-doc-action btn-doc-delete" data-doc-id="${doc.id}" data-doc-name="${esc(doc.original_name)}">&times;</button>
+      ${!viewerMode ? `<button class="btn-doc-action btn-doc-delete" data-doc-id="${doc.id}" data-doc-name="${esc(doc.original_name)}">&times;</button>` : ''}
     </div>
   `).join('');
 
-  container.querySelectorAll('.btn-doc-delete').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (!confirm(`Delete "${btn.dataset.docName}"?`)) return;
-      await api('DELETE', `/api/documents/${btn.dataset.docId}`);
-      loadDocuments(companyId);
+  if (!viewerMode) {
+    container.querySelectorAll('.btn-doc-delete').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm(`Delete "${btn.dataset.docName}"?`)) return;
+        await api('DELETE', `/api/documents/${btn.dataset.docId}`);
+        loadDocuments(companyId);
+      });
     });
-  });
+  }
 }
 
 function formatBytes(bytes) {
@@ -611,5 +618,21 @@ document.getElementById('mapViewBtn').addEventListener('click', () => {
   else openMapView();
 });
 
+// ===== Viewer mode =====
+function applyViewerMode() {
+  document.getElementById('addCompanyBtn').style.display = 'none';
+  document.getElementById('detailDelete').style.display = 'none';
+  document.getElementById('detailEdit').style.display = 'none';
+}
+
 // ===== Init =====
-loadCompanies();
+(async () => {
+  try {
+    const me = await api('GET', '/api/me');
+    if (me && me.role === 'viewer') {
+      viewerMode = true;
+      applyViewerMode();
+    }
+  } catch (_) {}
+  await loadCompanies();
+})();
