@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>M&A Pipeline Tracker — Origination</title>
-  <link rel="stylesheet" href="styles.css?v=3" />
+  <link rel="stylesheet" href="styles.css?v=4" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
@@ -76,7 +76,11 @@
 
   <!-- Map View -->
   <div class="map-wrapper" id="mapWrapper" style="display:none">
-    <div id="companyMap"></div>
+    <div id="companyMap">
+      <div class="map-legend" id="mapLegend">
+        <div class="map-legend-title">Pipeline Stage</div>
+      </div>
+    </div>
     <div class="map-no-address" id="mapNoAddress" style="display:none">
       <div class="map-no-address-inner">
         <strong id="mapNoAddressCount"></strong>
@@ -223,6 +227,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>

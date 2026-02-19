@@ -593,6 +593,50 @@ form { padding: 20px 24px; }
   z-index: 0;
 }
 
+/* Map Legend */
+.map-legend {
+  position: absolute;
+  bottom: 32px;
+  right: 10px;
+  z-index: 1000;
+  background: var(--white);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  padding: 10px 14px;
+  min-width: 180px;
+  pointer-events: none;
+}
+
+.map-legend-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gray-500);
+  margin-bottom: 8px;
+}
+
+.map-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--gray-700);
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+
+.map-legend-item:last-child { margin-bottom: 0; }
+
+.map-legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  flex-shrink: 0;
+}
+
 .map-no-address {
   background: var(--white);
   border-top: 1px solid var(--gray-300);

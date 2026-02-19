@@ -362,6 +362,17 @@ async function openMapView() {
   document.getElementById('filterBar').style.display = 'none';
   document.getElementById('mapViewBtn').textContent = '← Board View';
 
+  // Build legend
+  const legend = document.getElementById('mapLegend');
+  // Remove any previously added stage rows (keep the title)
+  legend.querySelectorAll('.map-legend-item').forEach(el => el.remove());
+  STAGES.forEach(s => {
+    const row = document.createElement('div');
+    row.className = 'map-legend-item';
+    row.innerHTML = `<span class="map-legend-dot" style="background:${s.color}"></span>${s.key}`;
+    legend.appendChild(row);
+  });
+
   if (!mapInstance) {
     mapInstance = L.map('companyMap').setView([38.5, -96], 4);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
