@@ -585,6 +585,7 @@ form { padding: 20px 24px; }
   flex-direction: column;
   height: calc(100vh - 130px);
   padding: 0;
+  position: relative;
 }
 
 #companyMap {
