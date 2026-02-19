@@ -177,6 +177,40 @@ function openDetail(id) {
     });
   });
 
+  // Documents section
+  const docsSection = document.createElement('div');
+  docsSection.className = 'docs-section';
+  docsSection.innerHTML = `
+    <div class="docs-header">
+      <span class="docs-section-title">Documents</span>
+      <label class="btn-doc-upload">
+        + Upload
+        <input type="file" id="docFileInput" style="display:none" multiple>
+      </label>
+    </div>
+    <div id="detailDocs"><em class="docs-empty">Loading...</em></div>
+  `;
+  body.appendChild(docsSection);
+
+  document.getElementById('docFileInput').addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    for (const file of files) {
+      const fd = new FormData();
+      fd.append('file', file);
+      try {
+        const res = await fetch(`/api/companies/${id}/documents`, { method: 'POST', body: fd });
+        if (!res.ok) throw new Error(await res.text());
+      } catch (err) {
+        alert('Upload failed: ' + err.message);
+      }
+    }
+    e.target.value = '';
+    loadDocuments(id);
+  });
+
+  loadDocuments(id);
+
   document.getElementById('detailOverlay').classList.add('active');
 }
 
@@ -332,6 +366,46 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
   await fetch('/api/logout', { method: 'POST' });
   window.location.href = '/login';
 });
+
+// ===== Documents =====
+async function loadDocuments(companyId) {
+  try {
+    const docs = await api('GET', `/api/companies/${companyId}/documents`);
+    renderDocuments(companyId, docs);
+  } catch (_) {}
+}
+
+function renderDocuments(companyId, docs) {
+  const container = document.getElementById('detailDocs');
+  if (!container) return;
+  if (!docs.length) {
+    container.innerHTML = '<em class="docs-empty">No documents uploaded yet</em>';
+    return;
+  }
+  container.innerHTML = docs.map(doc => `
+    <div class="doc-row">
+      <span class="doc-name" title="${esc(doc.original_name)}">${esc(doc.original_name)}</span>
+      <span class="doc-size">${formatBytes(doc.size)}</span>
+      <a href="/api/documents/${doc.id}/download" class="btn-doc-action btn-doc-download" download="${esc(doc.original_name)}">Download</a>
+      <button class="btn-doc-action btn-doc-delete" data-doc-id="${doc.id}" data-doc-name="${esc(doc.original_name)}">&times;</button>
+    </div>
+  `).join('');
+
+  container.querySelectorAll('.btn-doc-delete').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm(`Delete "${btn.dataset.docName}"?`)) return;
+      await api('DELETE', `/api/documents/${btn.dataset.docId}`);
+      loadDocuments(companyId);
+    });
+  });
+}
+
+function formatBytes(bytes) {
+  if (!bytes) return '';
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
 
 // ===== Map View =====
 let mapInstance = null;

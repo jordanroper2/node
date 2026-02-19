@@ -2,7 +2,9 @@ const express = require('express');
 const Database = require('better-sqlite3');
 const path = require('path');
 const crypto = require('crypto');
+const fs = require('fs');
 const cookieParser = require('cookie-parser');
+const multer = require('multer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,10 +15,34 @@ const AUTH_COOKIE = 'ma_auth';
 const AUTH_VALUE = crypto.createHash('sha256').update(PASSWORD).digest('hex');
 
 // Initialize database (DB_PATH env var lets Railway point to a persistent volume)
-const db = new Database(process.env.DB_PATH || path.join(__dirname, 'pipeline.db'));
+const DB_FILE = process.env.DB_PATH || path.join(__dirname, 'pipeline.db');
+const db = new Database(DB_FILE);
+
+// Upload directory sits next to the database on the same volume
+const UPLOAD_DIR = path.join(path.dirname(DB_FILE), 'uploads');
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+
+// Multer config
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`);
+  },
+});
+const upload = multer({ storage, limits: { fileSize: 25 * 1024 * 1024 } }); // 25 MB
 
 // Create tables
 db.exec(`
+  CREATE TABLE IF NOT EXISTS documents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    company_id INTEGER NOT NULL,
+    original_name TEXT NOT NULL,
+    stored_name TEXT NOT NULL,
+    size INTEGER,
+    uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
   CREATE TABLE IF NOT EXISTS companies (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -155,12 +181,53 @@ app.patch('/api/companies/:id', (req, res) => {
   res.json(updated);
 });
 
-// DELETE company
+// DELETE company (also removes its documents)
 app.delete('/api/companies/:id', (req, res) => {
   const company = db.prepare('SELECT * FROM companies WHERE id = ?').get(req.params.id);
   if (!company) return res.status(404).json({ error: 'Company not found' });
 
+  const docs = db.prepare('SELECT * FROM documents WHERE company_id = ?').all(req.params.id);
+  docs.forEach(doc => {
+    try { fs.unlinkSync(path.join(UPLOAD_DIR, doc.stored_name)); } catch (_) {}
+  });
+  db.prepare('DELETE FROM documents WHERE company_id = ?').run(req.params.id);
   db.prepare('DELETE FROM companies WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
+});
+
+// ===== Document endpoints =====
+
+// GET documents for a company
+app.get('/api/companies/:id/documents', (req, res) => {
+  const docs = db.prepare(
+    'SELECT * FROM documents WHERE company_id = ? ORDER BY uploaded_at DESC'
+  ).all(req.params.id);
+  res.json(docs);
+});
+
+// POST upload a document
+app.post('/api/companies/:id/documents', upload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+  const result = db.prepare(
+    'INSERT INTO documents (company_id, original_name, stored_name, size) VALUES (?, ?, ?, ?)'
+  ).run(req.params.id, req.file.originalname, req.file.filename, req.file.size);
+  const doc = db.prepare('SELECT * FROM documents WHERE id = ?').get(result.lastInsertRowid);
+  res.status(201).json(doc);
+});
+
+// GET download a document
+app.get('/api/documents/:id/download', (req, res) => {
+  const doc = db.prepare('SELECT * FROM documents WHERE id = ?').get(req.params.id);
+  if (!doc) return res.status(404).json({ error: 'Document not found' });
+  res.download(path.join(UPLOAD_DIR, doc.stored_name), doc.original_name);
+});
+
+// DELETE a document
+app.delete('/api/documents/:id', (req, res) => {
+  const doc = db.prepare('SELECT * FROM documents WHERE id = ?').get(req.params.id);
+  if (!doc) return res.status(404).json({ error: 'Document not found' });
+  try { fs.unlinkSync(path.join(UPLOAD_DIR, doc.stored_name)); } catch (_) {}
+  db.prepare('DELETE FROM documents WHERE id = ?').run(req.params.id);
   res.json({ success: true });
 });
 

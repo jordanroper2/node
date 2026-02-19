@@ -575,6 +575,107 @@ form { padding: 20px 24px; }
 .stage-btn[data-stage="Closed"]                   { border-color: var(--stage-7); color: var(--stage-7); }
 .stage-btn[data-stage="Closed"].active            { background: var(--stage-7); }
 
+/* ===== Documents Section ===== */
+.docs-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--gray-200, #e5e7eb);
+}
+
+.docs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.docs-section-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gray-500);
+}
+
+.btn-doc-upload {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--blue-500);
+  cursor: pointer;
+  padding: 4px 10px;
+  border: 1px solid var(--blue-500);
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-doc-upload:hover {
+  background: var(--blue-500);
+  color: var(--white);
+}
+
+.docs-empty {
+  font-size: 0.8rem;
+  color: var(--gray-400, #9ca3af);
+  font-style: italic;
+}
+
+.doc-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.doc-row:last-child { border-bottom: none; }
+
+.doc-name {
+  flex: 1;
+  font-size: 0.82rem;
+  color: var(--gray-900);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.doc-size {
+  font-size: 0.72rem;
+  color: var(--gray-500);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-doc-action {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.btn-doc-download {
+  background: var(--gray-100);
+  color: var(--blue-500);
+}
+
+.btn-doc-download:hover { background: var(--blue-100); }
+
+.btn-doc-delete {
+  background: none;
+  color: var(--gray-400, #9ca3af);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 2px 6px;
+}
+
+.btn-doc-delete:hover { color: var(--red); }
+
 /* ===== Map View Button ===== */
 .btn-map {
   background: var(--blue-700);
