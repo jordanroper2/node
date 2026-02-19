@@ -331,5 +331,109 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
   window.location.href = '/login';
 });
 
+// ===== Map View =====
+let mapInstance = null;
+let mapMode = false;
+const geocodeCache = {};
+
+function stageColor(stageName) {
+  return STAGES.find(s => s.key === stageName)?.color || '#6b7280';
+}
+
+async function geocodeAddress(address) {
+  if (geocodeCache[address]) return geocodeCache[address];
+  try {
+    const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(address);
+    const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+    const data = await res.json();
+    if (data && data[0]) {
+      const result = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+      geocodeCache[address] = result;
+      return result;
+    }
+  } catch (_) {}
+  return null;
+}
+
+async function openMapView() {
+  mapMode = true;
+  document.getElementById('pipelineWrapper').style.display = 'none';
+  document.getElementById('mapWrapper').style.display = 'flex';
+  document.getElementById('filterBar').style.display = 'none';
+  document.getElementById('mapViewBtn').textContent = '← Board View';
+
+  if (!mapInstance) {
+    mapInstance = L.map('companyMap').setView([38.5, -96], 4);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19,
+    }).addTo(mapInstance);
+  }
+
+  // Clear existing markers
+  mapInstance.eachLayer(layer => {
+    if (layer instanceof L.Marker) mapInstance.removeLayer(layer);
+  });
+
+  const withAddress = companies.filter(c => c.city || c.street_address);
+  const noAddress = companies.filter(c => !c.city && !c.street_address);
+
+  // Show no-address panel
+  const noAddrEl = document.getElementById('mapNoAddress');
+  if (noAddress.length > 0) {
+    document.getElementById('mapNoAddressCount').textContent =
+      `${noAddress.length} ${noAddress.length === 1 ? 'company' : 'companies'} without an address: `;
+    document.getElementById('mapNoAddressList').textContent =
+      noAddress.map(c => c.name).join(', ');
+    noAddrEl.style.display = '';
+  } else {
+    noAddrEl.style.display = 'none';
+  }
+
+  // Geocode and place markers (rate-limited: 1 per 300ms for Nominatim)
+  for (let i = 0; i < withAddress.length; i++) {
+    const c = withAddress[i];
+    const addressParts = [c.street_address, c.city, c.state, c.zip].filter(Boolean);
+    const address = addressParts.join(', ');
+    const coords = await geocodeAddress(address);
+    if (!coords) continue;
+
+    const color = stageColor(c.stage);
+    const markerHtml = `<div style="
+      width:14px;height:14px;border-radius:50%;
+      background:${color};border:2px solid #fff;
+      box-shadow:0 1px 4px rgba(0,0,0,0.4)"></div>`;
+
+    const icon = L.divIcon({ html: markerHtml, className: '', iconSize: [14, 14], iconAnchor: [7, 7] });
+    const marker = L.marker([coords.lat, coords.lng], { icon }).addTo(mapInstance);
+
+    const popupContent = `
+      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-width:160px">
+        <div style="font-weight:700;font-size:0.9rem;margin-bottom:4px">${esc(c.name)}</div>
+        <div style="font-size:0.75rem;color:#6b7280;margin-bottom:4px">${esc(c.company_type || '—')}</div>
+        <div style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.7rem;font-weight:700;color:#fff;background:${color}">${esc(c.stage)}</div>
+        ${addressParts.length ? `<div style="font-size:0.75rem;color:#374151;margin-top:6px">${esc(addressParts.join(', '))}</div>` : ''}
+      </div>`;
+    marker.bindPopup(popupContent);
+
+    if (i < withAddress.length - 1) await new Promise(r => setTimeout(r, 300));
+  }
+
+  mapInstance.invalidateSize();
+}
+
+function closeMapView() {
+  mapMode = false;
+  document.getElementById('pipelineWrapper').style.display = '';
+  document.getElementById('mapWrapper').style.display = 'none';
+  document.getElementById('filterBar').style.display = '';
+  document.getElementById('mapViewBtn').textContent = '\uD83D\uDCCD Map View';
+}
+
+document.getElementById('mapViewBtn').addEventListener('click', () => {
+  if (mapMode) closeMapView();
+  else openMapView();
+});
+
 // ===== Init =====
 loadCompanies();

@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>M&A Pipeline Tracker — Origination</title>
-  <link rel="stylesheet" href="styles.css?v=2" />
+  <link rel="stylesheet" href="styles.css?v=3" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
   <header class="header">
@@ -15,6 +16,7 @@
       </div>
       <div class="header-actions">
         <button class="btn btn-primary" id="addCompanyBtn">+ Add Company</button>
+        <button class="btn btn-map" id="mapViewBtn">&#128205; Map View</button>
         <button class="btn btn-secondary" id="logoutBtn">Sign Out</button>
       </div>
     </div>
@@ -66,11 +68,22 @@
   </div>
 
   <!-- Pipeline Board -->
-  <main class="pipeline-wrapper">
+  <main class="pipeline-wrapper" id="pipelineWrapper">
     <div class="pipeline-board" id="pipelineBoard">
       <!-- Columns injected by JS -->
     </div>
   </main>
+
+  <!-- Map View -->
+  <div class="map-wrapper" id="mapWrapper" style="display:none">
+    <div id="companyMap"></div>
+    <div class="map-no-address" id="mapNoAddress" style="display:none">
+      <div class="map-no-address-inner">
+        <strong id="mapNoAddressCount"></strong>
+        <span id="mapNoAddressList"></span>
+      </div>
+    </div>
+  </div>
 
   <!-- Add/Edit Company Modal -->
   <div class="modal-overlay" id="modalOverlay">
@@ -209,6 +222,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=2"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>

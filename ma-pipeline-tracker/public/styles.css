@@ -571,6 +571,47 @@ form { padding: 20px 24px; }
 .stage-btn[data-stage="Stage Gate Approval"]      { border-color: var(--stage-6); color: var(--stage-6); }
 .stage-btn[data-stage="Stage Gate Approval"].active { background: var(--stage-6); }
 
+/* ===== Map View Button ===== */
+.btn-map {
+  background: var(--blue-700);
+  color: var(--white);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+.btn-map:hover { background: var(--blue-500); }
+
+/* ===== Map View ===== */
+.map-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 130px);
+  padding: 0;
+}
+
+#companyMap {
+  flex: 1;
+  width: 100%;
+  z-index: 0;
+}
+
+.map-no-address {
+  background: var(--white);
+  border-top: 1px solid var(--gray-300);
+  padding: 10px 24px;
+  flex-shrink: 0;
+}
+
+.map-no-address-inner {
+  max-width: 1600px;
+  margin: 0 auto;
+  font-size: 0.8rem;
+  color: var(--gray-500);
+}
+
+.map-no-address-inner strong {
+  color: var(--gray-700);
+  margin-right: 4px;
+}
+
 /* ===== Scrollbar ===== */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
