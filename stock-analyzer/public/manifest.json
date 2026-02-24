@@ -1,0 +1,18 @@
+{
+  "name": "Stock 200-Week MA Analyzer",
+  "short_name": "200w MA",
+  "description": "Real-time dashboard tracking stocks at or below their 200-week moving average across DJIA, S&P 500, and NASDAQ-100.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

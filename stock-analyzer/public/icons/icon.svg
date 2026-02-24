@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#0d1117"/>
+  <rect x="32" y="32" width="448" height="448" rx="64" fill="#161b22" stroke="#30363d" stroke-width="4"/>
+  <!-- Grid lines -->
+  <line x1="80" y1="400" x2="432" y2="400" stroke="#30363d" stroke-width="2"/>
+  <line x1="80" y1="320" x2="432" y2="320" stroke="#30363d" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="80" y1="240" x2="432" y2="240" stroke="#30363d" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="80" y1="160" x2="432" y2="160" stroke="#30363d" stroke-width="1" stroke-dasharray="4,4"/>
+  <!-- 200w MA line (dashed yellow) -->
+  <line x1="80" y1="260" x2="432" y2="230" stroke="#d29922" stroke-width="3" stroke-dasharray="10,6"/>
+  <!-- Stock price line (blue, going up) -->
+  <polyline points="80,350 140,310 200,280 240,320 280,250 340,180 400,140 432,120"
+    fill="none" stroke="#58a6ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Green dot at current price -->
+  <circle cx="432" cy="120" r="10" fill="#3fb950"/>
+  <!-- Text "MA" label -->
+  <text x="90" y="285" font-family="sans-serif" font-size="28" font-weight="bold" fill="#d29922" opacity="0.8">MA</text>
+</svg>
