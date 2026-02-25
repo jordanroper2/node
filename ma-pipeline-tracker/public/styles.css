@@ -19,7 +19,7 @@
   --white:    #ffffff;
 
   /* Stage colors */
-  --stage-1: #7c3aed;  /* Pre-Qualification       — violet */
+  --stage-1: #7c3aed;  /* Prospecting       — violet */
   --stage-2: #2563eb;  /* Information Requested   — blue */
   --stage-3: #0891b2;  /* Site Visit Completed    — cyan */
   --stage-4: #f97316;  /* Preliminary Due Diligence — orange */
@@ -323,7 +323,7 @@ body {
 }
 
 /* Stage accent border */
-.company-card[data-stage="Pre-Qualification"]       { border-left: 3px solid var(--stage-1); }
+.company-card[data-stage="Prospecting"]       { border-left: 3px solid var(--stage-1); }
 .company-card[data-stage="Information Requested"]   { border-left: 3px solid var(--stage-2); }
 .company-card[data-stage="Site Visit Completed"]    { border-left: 3px solid var(--stage-3); }
 .company-card[data-stage="Preliminary Due Diligence"] { border-left: 3px solid var(--stage-4); }
@@ -562,8 +562,8 @@ form { padding: 20px 24px; }
   color: var(--white);
 }
 
-.stage-btn[data-stage="Pre-Qualification"]        { border-color: var(--stage-1); color: var(--stage-1); }
-.stage-btn[data-stage="Pre-Qualification"].active { background: var(--stage-1); }
+.stage-btn[data-stage="Prospecting"]        { border-color: var(--stage-1); color: var(--stage-1); }
+.stage-btn[data-stage="Prospecting"].active { background: var(--stage-1); }
 .stage-btn[data-stage="Information Requested"]    { border-color: var(--stage-2); color: var(--stage-2); }
 .stage-btn[data-stage="Information Requested"].active { background: var(--stage-2); }
 .stage-btn[data-stage="Site Visit Completed"]     { border-color: var(--stage-3); color: var(--stage-3); }

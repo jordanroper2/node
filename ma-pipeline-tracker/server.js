@@ -60,7 +60,7 @@ db.exec(`
     ebitda TEXT,
     employees TEXT,
     website TEXT,
-    stage TEXT NOT NULL DEFAULT 'Pre-Qualification',
+    stage TEXT NOT NULL DEFAULT 'Prospecting',
     notes TEXT,
     nda TEXT,
     opportunity_owner TEXT,
@@ -99,6 +99,9 @@ if (!existingCols.includes('nda')) db.exec('ALTER TABLE companies ADD COLUMN nda
 if (!existingCols.includes('opportunity_owner')) db.exec('ALTER TABLE companies ADD COLUMN opportunity_owner TEXT');
 if (!existingCols.includes('lost_reason')) db.exec('ALTER TABLE companies ADD COLUMN lost_reason TEXT');
 if (!existingCols.includes('stage_entered_at')) db.exec('ALTER TABLE companies ADD COLUMN stage_entered_at DATETIME');
+
+// Data migration: rename stages
+db.prepare("UPDATE companies SET stage = 'Prospecting' WHERE stage = 'Pre-Qualification'").run();
 
 app.use(express.json());
 app.use(cookieParser());
@@ -189,7 +192,7 @@ app.post('/api/companies', (req, res) => {
 
   if (!name) return res.status(400).json({ error: 'Company name is required' });
 
-  const finalStage = stage || 'Pre-Qualification';
+  const finalStage = stage || 'Prospecting';
   const result = db.prepare(`
     INSERT INTO companies (name, company_type, street_address, city, state, zip, contact_name, contact_email, contact_phone, revenue, ebitda, employees, website, stage, notes, nda, opportunity_owner, lost_reason)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)

@@ -1,7 +1,7 @@
 'use strict';
 
 const STAGES = [
-  { key: 'Pre-Qualification',         color: '#7c3aed' },  // violet
+  { key: 'Prospecting',         color: '#7c3aed' },  // violet
   { key: 'Information Requested',     color: '#2563eb' },  // blue
   { key: 'Site Visit Completed',      color: '#0891b2' },  // cyan
   { key: 'Preliminary Due Diligence', color: '#f97316' },  // orange
@@ -96,7 +96,7 @@ function render() {
 
 function renderStats(filtered) {
   document.querySelector('#stat-total .stat-num').textContent     = filtered.length;
-  document.querySelector('#stat-pre-qual .stat-num').textContent  = countIn(filtered, 'Pre-Qualification');
+  document.querySelector('#stat-pre-qual .stat-num').textContent  = countIn(filtered, 'Prospecting');
   document.querySelector('#stat-info-req .stat-num').textContent  = countIn(filtered, 'Information Requested');
   document.querySelector('#stat-site-visit .stat-num').textContent = countIn(filtered, 'Site Visit Completed');
   document.querySelector('#stat-prelim-dd .stat-num').textContent = countIn(filtered, 'Preliminary Due Diligence');

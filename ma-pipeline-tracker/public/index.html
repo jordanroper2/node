@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>M&A Pipeline Tracker — Origination</title>
-  <link rel="stylesheet" href="styles.css?v=9" />
+  <link rel="stylesheet" href="styles.css?v=10" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
@@ -28,7 +28,7 @@
   <!-- Stats bar -->
   <div class="stats-bar">
     <div class="stat" id="stat-total"><span class="stat-num">0</span><span class="stat-label">Total</span></div>
-    <div class="stat" id="stat-pre-qual"><span class="stat-num">0</span><span class="stat-label">Pre-Qualification</span></div>
+    <div class="stat" id="stat-pre-qual"><span class="stat-num">0</span><span class="stat-label">Prospecting</span></div>
     <div class="stat" id="stat-info-req"><span class="stat-num">0</span><span class="stat-label">Info Requested</span></div>
     <div class="stat" id="stat-site-visit"><span class="stat-num">0</span><span class="stat-label">Site Visit</span></div>
     <div class="stat" id="stat-prelim-dd"><span class="stat-num">0</span><span class="stat-label">Prelim DD</span></div>
@@ -191,7 +191,7 @@
     <label class="bulk-label">Move to:</label>
     <select id="bulkStageSelect" class="bulk-select">
       <option value="">— Select Stage —</option>
-      <option>Pre-Qualification</option>
+      <option>Prospecting</option>
       <option>Information Requested</option>
       <option>Site Visit Completed</option>
       <option>Preliminary Due Diligence</option>
@@ -235,7 +235,7 @@
           <div class="form-group">
             <label for="stage">Pipeline Stage</label>
             <select id="stage" name="stage">
-              <option value="Pre-Qualification">Pre-Qualification</option>
+              <option value="Prospecting">Prospecting</option>
               <option value="Information Requested">Information Requested</option>
               <option value="Site Visit Completed">Site Visit Completed</option>
               <option value="Preliminary Due Diligence">Preliminary Due Diligence</option>
@@ -391,6 +391,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="app.js?v=11"></script>
+  <script src="app.js?v=12"></script>
 </body>
 </html>
