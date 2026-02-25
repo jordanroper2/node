@@ -93,7 +93,7 @@ if (!existingCols.includes('zip')) db.exec('ALTER TABLE companies ADD COLUMN zip
 if (!existingCols.includes('nda')) db.exec('ALTER TABLE companies ADD COLUMN nda TEXT');
 if (!existingCols.includes('opportunity_owner')) db.exec('ALTER TABLE companies ADD COLUMN opportunity_owner TEXT');
 if (!existingCols.includes('lost_reason')) db.exec('ALTER TABLE companies ADD COLUMN lost_reason TEXT');
-if (!existingCols.includes('stage_entered_at')) db.exec('ALTER TABLE companies ADD COLUMN stage_entered_at DATETIME DEFAULT CURRENT_TIMESTAMP');
+if (!existingCols.includes('stage_entered_at')) db.exec('ALTER TABLE companies ADD COLUMN stage_entered_at DATETIME');
 
 app.use(express.json());
 app.use(cookieParser());
