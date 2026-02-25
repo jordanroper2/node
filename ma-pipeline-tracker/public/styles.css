@@ -1105,6 +1105,288 @@ form { padding: 20px 24px; }
   font-weight: 700;
 }
 
+/* ===== Analytics Button ===== */
+.btn-analytics {
+  background: var(--blue-700);
+  color: var(--white);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+.btn-analytics:hover { background: var(--blue-500); }
+
+/* ===== Select Mode Button ===== */
+.btn-select-mode {
+  background: var(--gray-100);
+  color: var(--gray-700);
+  border: 1px solid var(--gray-300);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-select-mode:hover { background: var(--gray-200, #e5e7eb); }
+.btn-select-mode.active {
+  background: var(--blue-500);
+  color: var(--white);
+  border-color: var(--blue-500);
+}
+
+/* ===== Stage Duration Badge on Cards ===== */
+.card-duration {
+  font-size: 0.63rem;
+  font-weight: 600;
+  color: var(--gray-400, #9ca3af);
+  margin-top: 4px;
+  text-align: right;
+}
+.card-duration.warn  { color: #d97706; }
+.card-duration.overdue { color: var(--red); }
+
+/* ===== Select Mode Card Styles ===== */
+.company-card.selectable { cursor: default; }
+.company-card.selectable:hover { transform: none; box-shadow: none; }
+
+.card-checkbox-wrap {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.card-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--blue-500);
+}
+
+.company-card.card-selected {
+  border-color: var(--blue-500);
+  background: var(--blue-50);
+  box-shadow: 0 0 0 2px var(--blue-500);
+}
+
+/* ===== Bulk Action Bar ===== */
+.bulk-action-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 300;
+  background: var(--blue-900);
+  color: var(--white);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.25);
+}
+
+.bulk-count {
+  font-weight: 700;
+  font-size: 0.9rem;
+  min-width: 90px;
+}
+
+.bulk-sep {
+  color: rgba(255,255,255,0.3);
+}
+
+.bulk-label {
+  font-size: 0.85rem;
+  color: var(--blue-100);
+}
+
+.bulk-select {
+  padding: 6px 10px;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.1);
+  color: var(--white);
+  font-size: 0.85rem;
+  cursor: pointer;
+  min-width: 200px;
+}
+
+.bulk-select option { background: var(--blue-900); color: var(--white); }
+
+/* ===== Analytics View ===== */
+.analytics-wrapper {
+  padding: 24px;
+  min-height: calc(100vh - 130px);
+  background: var(--gray-100);
+}
+
+.analytics-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.analytics-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.analytics-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+/* Summary cards */
+.analytics-summary-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.analytics-stat-card {
+  background: var(--white);
+  border-radius: 10px;
+  padding: 20px 22px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  text-align: center;
+}
+
+.analytics-stat-num {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--blue-900);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.analytics-stat-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--gray-500);
+  margin-top: 6px;
+}
+
+/* Chart boxes */
+.analytics-charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.analytics-chart-box {
+  background: var(--white);
+  border-radius: 10px;
+  padding: 20px 22px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.analytics-chart-wide {
+  width: 100%;
+}
+
+.analytics-chart-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gray-500);
+  margin-bottom: 16px;
+}
+
+/* Horizontal bar chart rows */
+.chart-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.chart-row:last-child { margin-bottom: 0; }
+
+.chart-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--gray-700);
+  width: 170px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chart-bar-wrap {
+  flex: 1;
+  background: var(--gray-100);
+  border-radius: 4px;
+  height: 20px;
+  overflow: hidden;
+}
+
+.chart-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+  min-width: 3px;
+}
+
+.chart-value {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--gray-700);
+  width: 36px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Monthly vertical bar chart */
+.monthly-chart-wrap {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  height: 140px;
+}
+
+.monthly-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  gap: 4px;
+}
+
+.monthly-bar-wrap {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.monthly-bar {
+  width: 100%;
+  background: var(--blue-500);
+  border-radius: 4px 4px 0 0;
+  min-height: 3px;
+  transition: height 0.4s ease;
+}
+
+.monthly-label {
+  font-size: 0.68rem;
+  color: var(--gray-500);
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.monthly-value {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--gray-700);
+}
+
 /* ===== Scrollbar ===== */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

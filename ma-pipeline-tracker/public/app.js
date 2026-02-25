@@ -16,7 +16,10 @@ let editingId = null;
 let detailId = null;
 let viewerMode = false;
 let sortBy = 'newest';
-const filters = { search: '', state: '', company_type: '' };
+let analyticsMode = false;
+let selectMode = false;
+const selectedIds = new Set();
+const filters = { search: '', state: '', company_type: '', opportunity_owner: '' };
 
 function getFilteredCompanies() {
   return companies.filter(c => {
@@ -27,7 +30,27 @@ function getFilteredCompanies() {
     }
     if (filters.state && c.state !== filters.state) return false;
     if (filters.company_type && c.company_type !== filters.company_type) return false;
+    if (filters.opportunity_owner && c.opportunity_owner !== filters.opportunity_owner) return false;
     return true;
+  });
+}
+
+function daysInStage(c) {
+  const ref = c.stage_entered_at || c.updated_at || c.created_at;
+  return Math.floor((Date.now() - new Date(ref)) / (1000 * 60 * 60 * 24));
+}
+
+function populateOwnerFilter() {
+  const select = document.getElementById('filterOwner');
+  const current = filters.opportunity_owner;
+  const owners = [...new Set(companies.map(c => c.opportunity_owner).filter(Boolean))].sort();
+  select.innerHTML = '<option value="">All Owners</option>';
+  owners.forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o;
+    opt.textContent = o;
+    if (o === current) opt.selected = true;
+    select.appendChild(opt);
   });
 }
 
@@ -56,8 +79,10 @@ async function api(method, path, body) {
 
 async function loadCompanies() {
   companies = await api('GET', '/api/companies');
+  populateOwnerFilter();
   render();
   if (lostMode) renderLostView();
+  if (analyticsMode) renderAnalytics();
 }
 
 // ===== Render =====
@@ -85,7 +110,7 @@ function countIn(arr, stage) {
 }
 
 function updateFilterUI(filtered) {
-  const hasFilters = filters.search || filters.state || filters.company_type;
+  const hasFilters = filters.search || filters.state || filters.company_type || filters.opportunity_owner;
   document.getElementById('clearFiltersBtn').style.display = hasFilters ? '' : 'none';
   const countEl = document.getElementById('filterResultCount');
   if (hasFilters) {
@@ -127,7 +152,17 @@ function renderBoard(filtered) {
 
   // Attach card click handlers
   board.querySelectorAll('.company-card').forEach(card => {
-    card.addEventListener('click', () => openDetail(Number(card.dataset.id)));
+    card.addEventListener('click', (e) => {
+      if (selectMode) {
+        if (e.target.classList.contains('card-checkbox')) return; // let checkbox handle itself
+        toggleCardSelect(Number(card.dataset.id));
+      } else {
+        openDetail(Number(card.dataset.id));
+      }
+    });
+  });
+  board.querySelectorAll('.card-checkbox').forEach(cb => {
+    cb.addEventListener('change', () => toggleCardSelect(Number(cb.dataset.id)));
   });
 }
 
@@ -146,8 +181,12 @@ function ndaBadgeHTML(nda) {
 function companyCardHTML(c, color) {
   const location = [c.city, c.state].filter(Boolean).join(', ');
   const dateStr = new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const days = daysInStage(c);
+  const durationClass = days > 30 ? 'overdue' : days > 14 ? 'warn' : '';
+  const isSelected = selectedIds.has(c.id);
   return `
-    <div class="company-card" data-id="${c.id}" data-stage="${esc(c.stage)}">
+    <div class="company-card${selectMode ? ' selectable' : ''}${isSelected ? ' card-selected' : ''}" data-id="${c.id}" data-stage="${esc(c.stage)}">
+      ${selectMode ? `<div class="card-checkbox-wrap"><input type="checkbox" class="card-checkbox" data-id="${c.id}" ${isSelected ? 'checked' : ''}></div>` : ''}
       <div class="card-name">${esc(c.name)} ${ndaBadgeHTML(c.nda)}</div>
       <div class="card-meta">
         ${c.company_type ? `<span>&#9632; ${esc(c.company_type)}</span>` : ''}
@@ -155,7 +194,7 @@ function companyCardHTML(c, color) {
         ${c.revenue ? `<span>&#36; ${esc(c.revenue)}</span>` : ''}
       </div>
       ${c.company_type ? `<span class="card-tag">${esc(c.company_type)}</span>` : ''}
-      <div class="card-date">Added ${dateStr}</div>
+      <div class="card-duration ${durationClass}">${days}d in stage</div>
     </div>
   `;
 }
@@ -445,6 +484,11 @@ document.getElementById('filterType').addEventListener('change', e => {
   render();
 });
 
+document.getElementById('filterOwner').addEventListener('change', e => {
+  filters.opportunity_owner = e.target.value;
+  render();
+});
+
 document.getElementById('sortSelect').addEventListener('change', e => {
   sortBy = e.target.value;
   render();
@@ -456,9 +500,11 @@ document.getElementById('clearFiltersBtn').addEventListener('click', () => {
   filters.search = '';
   filters.state = '';
   filters.company_type = '';
+  filters.opportunity_owner = '';
   document.getElementById('filterSearch').value = '';
   document.getElementById('filterState').value = '';
   document.getElementById('filterType').value = '';
+  document.getElementById('filterOwner').value = '';
   render();
 });
 
@@ -648,12 +694,167 @@ document.getElementById('lostReasonConfirm').addEventListener('click', async () 
   openDetail(lostReasonCompanyId);
 });
 
+// ===== Analytics View =====
+
+function openAnalyticsView() {
+  if (lostMode) closeLostView();
+  if (mapMode) closeMapView();
+  analyticsMode = true;
+  document.getElementById('pipelineWrapper').style.display = 'none';
+  document.getElementById('filterBar').style.display = 'none';
+  document.getElementById('analyticsWrapper').style.display = '';
+  document.getElementById('analyticsBtn').textContent = '\u2190 Board View';
+  renderAnalytics();
+}
+
+function closeAnalyticsView() {
+  analyticsMode = false;
+  document.getElementById('pipelineWrapper').style.display = '';
+  document.getElementById('filterBar').style.display = '';
+  document.getElementById('analyticsWrapper').style.display = 'none';
+  document.getElementById('analyticsBtn').textContent = '\uD83D\uDCCA Analytics';
+}
+
+function renderAnalytics() {
+  const active = companies.filter(c => c.stage !== 'Lost/Disqualified');
+  const lost   = companies.filter(c => c.stage === 'Lost/Disqualified');
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const addedThisMonth = companies.filter(c => new Date(c.created_at) >= monthStart).length;
+  const allDays = active.map(c => daysInStage(c));
+  const avgDays = allDays.length ? Math.round(allDays.reduce((a, b) => a + b, 0) / allDays.length) : 0;
+
+  document.getElementById('anActiveDeals').textContent = active.length;
+  document.getElementById('anAddedMonth').textContent  = addedThisMonth;
+  document.getElementById('anAvgDays').textContent     = avgDays;
+  document.getElementById('anLostTotal').textContent   = lost.length;
+
+  renderStageCountChart(active);
+  renderStageDaysChart(active);
+  renderMonthlyChart();
+}
+
+function renderStageCountChart(active) {
+  const container = document.getElementById('chartStageCount');
+  const rows = STAGES.filter(s => s.key !== 'Lost/Disqualified').map(s => ({
+    stage: s, count: active.filter(c => c.stage === s.key).length
+  }));
+  const max = Math.max(...rows.map(r => r.count), 1);
+  container.innerHTML = rows.map(({ stage, count }) => `
+    <div class="chart-row">
+      <div class="chart-label" title="${stage.key}">${stage.key}</div>
+      <div class="chart-bar-wrap">
+        <div class="chart-bar" style="width:${(count / max) * 100}%;background:${stage.color}"></div>
+      </div>
+      <div class="chart-value">${count}</div>
+    </div>
+  `).join('');
+}
+
+function renderStageDaysChart(active) {
+  const container = document.getElementById('chartStageDays');
+  const rows = STAGES.filter(s => s.key !== 'Lost/Disqualified').map(s => {
+    const inStage = active.filter(c => c.stage === s.key);
+    const avg = inStage.length
+      ? Math.round(inStage.reduce((sum, c) => sum + daysInStage(c), 0) / inStage.length) : 0;
+    return { stage: s, avg, count: inStage.length };
+  });
+  const max = Math.max(...rows.map(r => r.avg), 1);
+  container.innerHTML = rows.map(({ stage, avg, count }) => `
+    <div class="chart-row">
+      <div class="chart-label" title="${stage.key}">${stage.key}</div>
+      <div class="chart-bar-wrap">
+        <div class="chart-bar" style="width:${(avg / max) * 100}%;background:${stage.color};opacity:${count > 0 ? 1 : 0.2}"></div>
+      </div>
+      <div class="chart-value">${count > 0 ? avg + 'd' : '\u2014'}</div>
+    </div>
+  `).join('');
+}
+
+function renderMonthlyChart() {
+  const container = document.getElementById('chartMonthly');
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() - i);
+    d.setHours(0, 0, 0, 0);
+    const end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+    const count = companies.filter(c => {
+      const created = new Date(c.created_at);
+      return created >= d && created < end;
+    }).length;
+    months.push({ label: d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }), count });
+  }
+  const max = Math.max(...months.map(m => m.count), 1);
+  container.innerHTML = months.map(({ label, count }) => `
+    <div class="monthly-col">
+      <div class="monthly-bar-wrap">
+        <div class="monthly-bar" style="height:${Math.max((count / max) * 100, count > 0 ? 4 : 0)}%"></div>
+      </div>
+      <div class="monthly-label">${label}</div>
+      <div class="monthly-value">${count}</div>
+    </div>
+  `).join('');
+}
+
+document.getElementById('analyticsBtn').addEventListener('click', () => {
+  if (analyticsMode) closeAnalyticsView();
+  else openAnalyticsView();
+});
+
+// ===== Select Mode / Bulk Actions =====
+
+function toggleSelectMode() {
+  selectMode = !selectMode;
+  selectedIds.clear();
+  document.getElementById('selectModeBtn').classList.toggle('active', selectMode);
+  document.getElementById('bulkActionBar').style.display = selectMode ? '' : 'none';
+  document.getElementById('bulkCount').textContent = '0 selected';
+  render();
+}
+
+function toggleCardSelect(id) {
+  if (selectedIds.has(id)) selectedIds.delete(id);
+  else selectedIds.add(id);
+  document.getElementById('bulkCount').textContent = `${selectedIds.size} selected`;
+  // Update visual state without full re-render
+  document.querySelectorAll(`.company-card[data-id="${id}"]`).forEach(card => {
+    card.classList.toggle('card-selected', selectedIds.has(id));
+    const cb = card.querySelector('.card-checkbox');
+    if (cb) cb.checked = selectedIds.has(id);
+  });
+}
+
+async function applyBulkMove() {
+  const stage = document.getElementById('bulkStageSelect').value;
+  if (!stage) { alert('Please select a target stage.'); return; }
+  if (!selectedIds.size) { alert('No companies selected.'); return; }
+  if (!confirm(`Move ${selectedIds.size} ${selectedIds.size === 1 ? 'company' : 'companies'} to "${stage}"?`)) return;
+  try {
+    await Promise.all([...selectedIds].map(id => api('PATCH', `/api/companies/${id}`, { stage })));
+    selectedIds.clear();
+    document.getElementById('bulkStageSelect').value = '';
+    selectMode = false;
+    document.getElementById('selectModeBtn').classList.remove('active');
+    document.getElementById('bulkActionBar').style.display = 'none';
+    await loadCompanies();
+  } catch (err) {
+    alert('Error moving companies: ' + err.message);
+  }
+}
+
+document.getElementById('selectModeBtn').addEventListener('click', toggleSelectMode);
+document.getElementById('bulkApplyBtn').addEventListener('click', applyBulkMove);
+document.getElementById('bulkCancelBtn').addEventListener('click', () => { if (selectMode) toggleSelectMode(); });
+
 // ===== Lost/Disqualified View =====
 let lostMode = false;
 let lostSearch = '';
 
 function openLostView() {
   if (mapMode) closeMapView();
+  if (analyticsMode) closeAnalyticsView();
   lostMode = true;
   document.getElementById('pipelineWrapper').style.display = 'none';
   document.getElementById('filterBar').style.display = 'none';
@@ -756,6 +957,7 @@ async function geocodeAddress(address) {
 
 async function openMapView() {
   if (lostMode) closeLostView();
+  if (analyticsMode) closeAnalyticsView();
   mapMode = true;
   document.getElementById('pipelineWrapper').style.display = 'none';
   document.getElementById('mapWrapper').style.display = 'flex';
@@ -851,6 +1053,8 @@ function applyViewerMode() {
   document.getElementById('addCompanyBtn').style.display = 'none';
   document.getElementById('detailDelete').style.display = 'none';
   document.getElementById('detailEdit').style.display = 'none';
+  document.getElementById('selectModeBtn').style.display = 'none';
+  document.getElementById('exportCsvBtn').style.display = 'none';
 }
 
 // ===== Init =====

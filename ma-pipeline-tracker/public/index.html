@@ -17,6 +17,7 @@
       <div class="header-actions">
         <button class="btn btn-primary" id="addCompanyBtn">+ Add Company</button>
         <button class="btn btn-export" id="exportCsvBtn">&#8615; Export CSV</button>
+        <button class="btn btn-analytics" id="analyticsBtn">&#128202; Analytics</button>
         <button class="btn btn-map" id="mapViewBtn">&#128205; Map View</button>
         <button class="btn btn-lost" id="lostViewBtn">Lost/Disqualified</button>
         <button class="btn btn-secondary" id="logoutBtn">Sign Out</button>
@@ -66,12 +67,16 @@
         <option>Carve-Out</option>
         <option>Other</option>
       </select>
+      <select id="filterOwner" class="filter-select">
+        <option value="">All Owners</option>
+      </select>
       <select id="sortSelect" class="filter-select">
         <option value="newest">Newest First</option>
         <option value="oldest">Oldest First</option>
         <option value="name-az">Name A&#8594;Z</option>
         <option value="name-za">Name Z&#8594;A</option>
       </select>
+      <button class="btn btn-select-mode" id="selectModeBtn">&#9635; Select</button>
       <button class="btn btn-filter-clear" id="clearFiltersBtn" style="display:none">&#10005; Clear</button>
       <span class="filter-result-count" id="filterResultCount" style="display:none"></span>
     </div>
@@ -124,6 +129,67 @@
         <div id="lostEmpty" class="lost-empty" style="display:none">No lost/disqualified opportunities yet</div>
       </div>
     </div>
+  </div>
+
+  <!-- Analytics View -->
+  <div class="analytics-wrapper" id="analyticsWrapper" style="display:none">
+    <div class="analytics-inner">
+      <div class="analytics-toolbar">
+        <h2 class="analytics-title">Pipeline Analytics</h2>
+      </div>
+      <div class="analytics-summary-row">
+        <div class="analytics-stat-card">
+          <div class="analytics-stat-num" id="anActiveDeals">—</div>
+          <div class="analytics-stat-label">Active Deals</div>
+        </div>
+        <div class="analytics-stat-card">
+          <div class="analytics-stat-num" id="anAddedMonth">—</div>
+          <div class="analytics-stat-label">Added This Month</div>
+        </div>
+        <div class="analytics-stat-card">
+          <div class="analytics-stat-num" id="anAvgDays">—</div>
+          <div class="analytics-stat-label">Avg Days in Stage</div>
+        </div>
+        <div class="analytics-stat-card">
+          <div class="analytics-stat-num" id="anLostTotal">—</div>
+          <div class="analytics-stat-label">Lost/Disqualified</div>
+        </div>
+      </div>
+      <div class="analytics-charts-row">
+        <div class="analytics-chart-box">
+          <div class="analytics-chart-title">Deals by Stage</div>
+          <div id="chartStageCount"></div>
+        </div>
+        <div class="analytics-chart-box">
+          <div class="analytics-chart-title">Avg Days in Current Stage</div>
+          <div id="chartStageDays"></div>
+        </div>
+      </div>
+      <div class="analytics-chart-box analytics-chart-wide">
+        <div class="analytics-chart-title">Deals Added — Last 6 Months</div>
+        <div id="chartMonthly" class="monthly-chart-wrap"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Action Bar -->
+  <div class="bulk-action-bar" id="bulkActionBar" style="display:none">
+    <span id="bulkCount" class="bulk-count">0 selected</span>
+    <span class="bulk-sep">|</span>
+    <label class="bulk-label">Move to:</label>
+    <select id="bulkStageSelect" class="bulk-select">
+      <option value="">— Select Stage —</option>
+      <option>Pre-Qualification</option>
+      <option>Information Requested</option>
+      <option>Site Visit Completed</option>
+      <option>Preliminary Due Diligence</option>
+      <option>Qualification</option>
+      <option>Stage Gate Approval</option>
+      <option>Closed</option>
+      <option>Lost/Disqualified</option>
+    </select>
+    <button class="btn btn-primary" id="bulkApplyBtn">Apply</button>
+    <button class="btn btn-secondary" id="bulkCancelBtn">Cancel</button>
   </div>
 
   <!-- Add/Edit Company Modal -->
@@ -313,6 +379,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="app.js?v=8"></script>
+  <script src="app.js?v=9"></script>
 </body>
 </html>

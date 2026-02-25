@@ -66,7 +66,8 @@ db.exec(`
     opportunity_owner TEXT,
     lost_reason TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    stage_entered_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
   CREATE TABLE IF NOT EXISTS activity_log (
@@ -92,6 +93,7 @@ if (!existingCols.includes('zip')) db.exec('ALTER TABLE companies ADD COLUMN zip
 if (!existingCols.includes('nda')) db.exec('ALTER TABLE companies ADD COLUMN nda TEXT');
 if (!existingCols.includes('opportunity_owner')) db.exec('ALTER TABLE companies ADD COLUMN opportunity_owner TEXT');
 if (!existingCols.includes('lost_reason')) db.exec('ALTER TABLE companies ADD COLUMN lost_reason TEXT');
+if (!existingCols.includes('stage_entered_at')) db.exec('ALTER TABLE companies ADD COLUMN stage_entered_at DATETIME DEFAULT CURRENT_TIMESTAMP');
 
 app.use(express.json());
 app.use(cookieParser());
@@ -228,8 +230,9 @@ app.patch('/api/companies/:id', (req, res) => {
 
   db.prepare(`UPDATE companies SET ${setClauses}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(...values);
 
-  // Log stage changes
+  // Log stage changes and reset stage_entered_at
   if (updates.stage && updates.stage !== oldStage) {
+    db.prepare('UPDATE companies SET stage_entered_at = CURRENT_TIMESTAMP WHERE id = ?').run(req.params.id);
     let details = `Moved from "${oldStage}" to "${updates.stage}"`;
     if (updates.stage === 'Lost/Disqualified' && updates.lost_reason) {
       details += ` — Reason: ${updates.lost_reason}`;
