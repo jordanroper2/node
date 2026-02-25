@@ -16,6 +16,7 @@
       </div>
       <div class="header-actions">
         <button class="btn btn-primary" id="addCompanyBtn">+ Add Company</button>
+        <button class="btn btn-export" id="exportCsvBtn">&#8615; Export CSV</button>
         <button class="btn btn-map" id="mapViewBtn">&#128205; Map View</button>
         <button class="btn btn-lost" id="lostViewBtn">Lost/Disqualified</button>
         <button class="btn btn-secondary" id="logoutBtn">Sign Out</button>
@@ -65,6 +66,12 @@
         <option>Carve-Out</option>
         <option>Other</option>
       </select>
+      <select id="sortSelect" class="filter-select">
+        <option value="newest">Newest First</option>
+        <option value="oldest">Oldest First</option>
+        <option value="name-az">Name A&#8594;Z</option>
+        <option value="name-za">Name Z&#8594;A</option>
+      </select>
       <button class="btn btn-filter-clear" id="clearFiltersBtn" style="display:none">&#10005; Clear</button>
       <span class="filter-result-count" id="filterResultCount" style="display:none"></span>
     </div>
@@ -107,6 +114,7 @@
               <th>Location</th>
               <th>Revenue</th>
               <th>NDA</th>
+              <th>Reason</th>
               <th>Opportunity Owner</th>
               <th>Date Updated</th>
             </tr>
@@ -270,7 +278,41 @@
     </div>
   </div>
 
+  <!-- Lost Reason Modal -->
+  <div class="modal-overlay" id="lostReasonOverlay">
+    <div class="modal modal-lost-reason">
+      <div class="modal-header">
+        <h2>Move to Lost/Disqualified</h2>
+        <button class="modal-close" id="lostReasonClose">&times;</button>
+      </div>
+      <div class="lost-reason-body">
+        <p class="lost-reason-prompt">Why is this opportunity being lost or disqualified?</p>
+        <div class="form-group">
+          <label for="lostReasonSelect">Reason</label>
+          <select id="lostReasonSelect" class="filter-select" style="width:100%">
+            <option value="">-- Select a reason --</option>
+            <option>Valuation Gap</option>
+            <option>No Response</option>
+            <option>Poor Fit</option>
+            <option>Timing</option>
+            <option>Competitive Loss</option>
+            <option>Seller Withdrew</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group" id="lostReasonOtherGroup" style="display:none">
+          <label for="lostReasonOther">Specify</label>
+          <input type="text" id="lostReasonOther" placeholder="Enter reason..." />
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" id="lostReasonCancel">Cancel</button>
+        <button class="btn btn-danger" id="lostReasonConfirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="app.js?v=7"></script>
+  <script src="app.js?v=8"></script>
 </body>
 </html>

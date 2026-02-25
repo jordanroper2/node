@@ -64,8 +64,24 @@ db.exec(`
     notes TEXT,
     nda TEXT,
     opportunity_owner TEXT,
+    lost_reason TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS activity_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    company_id INTEGER NOT NULL,
+    action TEXT NOT NULL,
+    details TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    company_id INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )
 `);
 
@@ -75,6 +91,7 @@ if (!existingCols.includes('street_address')) db.exec('ALTER TABLE companies ADD
 if (!existingCols.includes('zip')) db.exec('ALTER TABLE companies ADD COLUMN zip TEXT');
 if (!existingCols.includes('nda')) db.exec('ALTER TABLE companies ADD COLUMN nda TEXT');
 if (!existingCols.includes('opportunity_owner')) db.exec('ALTER TABLE companies ADD COLUMN opportunity_owner TEXT');
+if (!existingCols.includes('lost_reason')) db.exec('ALTER TABLE companies ADD COLUMN lost_reason TEXT');
 
 app.use(express.json());
 app.use(cookieParser());
@@ -160,19 +177,24 @@ app.post('/api/companies', (req, res) => {
     name, company_type, street_address, city, state, zip,
     contact_name, contact_email, contact_phone,
     revenue, ebitda, employees, website,
-    stage, notes, nda, opportunity_owner
+    stage, notes, nda, opportunity_owner, lost_reason
   } = req.body;
 
   if (!name) return res.status(400).json({ error: 'Company name is required' });
 
+  const finalStage = stage || 'Pre-Qualification';
   const result = db.prepare(`
-    INSERT INTO companies (name, company_type, street_address, city, state, zip, contact_name, contact_email, contact_phone, revenue, ebitda, employees, website, stage, notes, nda, opportunity_owner)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO companies (name, company_type, street_address, city, state, zip, contact_name, contact_email, contact_phone, revenue, ebitda, employees, website, stage, notes, nda, opportunity_owner, lost_reason)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     name, company_type, street_address, city, state, zip,
     contact_name, contact_email, contact_phone,
     revenue, ebitda, employees, website,
-    stage || 'Pre-Qualification', notes, nda, opportunity_owner
+    finalStage, notes, nda, opportunity_owner, lost_reason
+  );
+
+  db.prepare('INSERT INTO activity_log (company_id, action, details) VALUES (?, ?, ?)').run(
+    result.lastInsertRowid, 'Created', `Company added to ${finalStage}`
   );
 
   const company = db.prepare('SELECT * FROM companies WHERE id = ?').get(result.lastInsertRowid);
@@ -188,7 +210,7 @@ app.patch('/api/companies/:id', (req, res) => {
     'name', 'company_type', 'street_address', 'city', 'state', 'zip',
     'contact_name', 'contact_email', 'contact_phone',
     'revenue', 'ebitda', 'employees', 'website',
-    'stage', 'notes', 'nda', 'opportunity_owner'
+    'stage', 'notes', 'nda', 'opportunity_owner', 'lost_reason'
   ];
 
   const updates = {};
@@ -200,10 +222,22 @@ app.patch('/api/companies/:id', (req, res) => {
     return res.status(400).json({ error: 'No valid fields to update' });
   }
 
+  const oldStage = company.stage;
   const setClauses = Object.keys(updates).map(k => `${k} = ?`).join(', ');
   const values = [...Object.values(updates), req.params.id];
 
   db.prepare(`UPDATE companies SET ${setClauses}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(...values);
+
+  // Log stage changes
+  if (updates.stage && updates.stage !== oldStage) {
+    let details = `Moved from "${oldStage}" to "${updates.stage}"`;
+    if (updates.stage === 'Lost/Disqualified' && updates.lost_reason) {
+      details += ` — Reason: ${updates.lost_reason}`;
+    }
+    db.prepare('INSERT INTO activity_log (company_id, action, details) VALUES (?, ?, ?)').run(
+      req.params.id, 'Stage Change', details
+    );
+  }
 
   const updated = db.prepare('SELECT * FROM companies WHERE id = ?').get(req.params.id);
   res.json(updated);
@@ -219,6 +253,8 @@ app.delete('/api/companies/:id', (req, res) => {
     try { fs.unlinkSync(path.join(UPLOAD_DIR, doc.stored_name)); } catch (_) {}
   });
   db.prepare('DELETE FROM documents WHERE company_id = ?').run(req.params.id);
+  db.prepare('DELETE FROM activity_log WHERE company_id = ?').run(req.params.id);
+  db.prepare('DELETE FROM comments WHERE company_id = ?').run(req.params.id);
   db.prepare('DELETE FROM companies WHERE id = ?').run(req.params.id);
   res.json({ success: true });
 });
@@ -239,6 +275,9 @@ app.post('/api/companies/:id/documents', upload.single('file'), (req, res) => {
   const result = db.prepare(
     'INSERT INTO documents (company_id, original_name, stored_name, size) VALUES (?, ?, ?, ?)'
   ).run(req.params.id, req.file.originalname, req.file.filename, req.file.size);
+  db.prepare('INSERT INTO activity_log (company_id, action, details) VALUES (?, ?, ?)').run(
+    req.params.id, 'Document Uploaded', `Uploaded "${req.file.originalname}"`
+  );
   const doc = db.prepare('SELECT * FROM documents WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json(doc);
 });
@@ -255,8 +294,42 @@ app.delete('/api/documents/:id', (req, res) => {
   const doc = db.prepare('SELECT * FROM documents WHERE id = ?').get(req.params.id);
   if (!doc) return res.status(404).json({ error: 'Document not found' });
   try { fs.unlinkSync(path.join(UPLOAD_DIR, doc.stored_name)); } catch (_) {}
+  db.prepare('INSERT INTO activity_log (company_id, action, details) VALUES (?, ?, ?)').run(
+    doc.company_id, 'Document Deleted', `Deleted "${doc.original_name}"`
+  );
   db.prepare('DELETE FROM documents WHERE id = ?').run(req.params.id);
   res.json({ success: true });
+});
+
+// ===== Activity Log endpoints =====
+
+app.get('/api/companies/:id/activity', (req, res) => {
+  const logs = db.prepare(
+    'SELECT * FROM activity_log WHERE company_id = ? ORDER BY created_at DESC'
+  ).all(req.params.id);
+  res.json(logs);
+});
+
+// ===== Comments endpoints =====
+
+app.get('/api/companies/:id/comments', (req, res) => {
+  const comments = db.prepare(
+    'SELECT * FROM comments WHERE company_id = ? ORDER BY created_at DESC'
+  ).all(req.params.id);
+  res.json(comments);
+});
+
+app.post('/api/companies/:id/comments', (req, res) => {
+  const { content } = req.body;
+  if (!content || !content.trim()) return res.status(400).json({ error: 'Comment content is required' });
+  const result = db.prepare(
+    'INSERT INTO comments (company_id, content) VALUES (?, ?)'
+  ).run(req.params.id, content.trim());
+  db.prepare('INSERT INTO activity_log (company_id, action, details) VALUES (?, ?, ?)').run(
+    req.params.id, 'Comment Added', content.trim().substring(0, 100)
+  );
+  const comment = db.prepare('SELECT * FROM comments WHERE id = ?').get(result.lastInsertRowid);
+  res.status(201).json(comment);
 });
 
 app.listen(PORT, () => {

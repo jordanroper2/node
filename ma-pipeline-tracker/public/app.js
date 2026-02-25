@@ -15,6 +15,7 @@ let companies = [];
 let editingId = null;
 let detailId = null;
 let viewerMode = false;
+let sortBy = 'newest';
 const filters = { search: '', state: '', company_type: '' };
 
 function getFilteredCompanies() {
@@ -28,6 +29,17 @@ function getFilteredCompanies() {
     if (filters.company_type && c.company_type !== filters.company_type) return false;
     return true;
   });
+}
+
+function sortCompanies(arr) {
+  const sorted = [...arr];
+  switch (sortBy) {
+    case 'oldest':  sorted.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)); break;
+    case 'name-az': sorted.sort((a, b) => (a.name || '').localeCompare(b.name || '')); break;
+    case 'name-za': sorted.sort((a, b) => (b.name || '').localeCompare(a.name || '')); break;
+    default:        sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); break;
+  }
+  return sorted;
 }
 
 // ===== API helpers =====
@@ -91,7 +103,7 @@ function renderBoard(filtered) {
   STAGES.forEach(stage => {
     if (stage.key === 'Lost/Disqualified') return; // shown in separate Lost view
 
-    const stageCompanies = filtered.filter(c => c.stage === stage.key);
+    const stageCompanies = sortCompanies(filtered.filter(c => c.stage === stage.key));
 
     const col = document.createElement('div');
     col.className = 'stage-col';
@@ -119,12 +131,24 @@ function renderBoard(filtered) {
   });
 }
 
+function ndaBadgeHTML(nda) {
+  if (!nda) return '';
+  const styles = {
+    'Yes':     { bg: '#dcfce7', color: '#166534', label: 'NDA Signed' },
+    'Pending': { bg: '#fef3c7', color: '#92400e', label: 'NDA Pending' },
+    'No':      { bg: '#fee2e2', color: '#991b1b', label: 'No NDA' },
+  };
+  const s = styles[nda];
+  if (!s) return '';
+  return `<span class="nda-badge" style="background:${s.bg};color:${s.color}">${s.label}</span>`;
+}
+
 function companyCardHTML(c, color) {
   const location = [c.city, c.state].filter(Boolean).join(', ');
   const dateStr = new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   return `
     <div class="company-card" data-id="${c.id}" data-stage="${esc(c.stage)}">
-      <div class="card-name">${esc(c.name)}</div>
+      <div class="card-name">${esc(c.name)} ${ndaBadgeHTML(c.nda)}</div>
       <div class="card-meta">
         ${c.company_type ? `<span>&#9632; ${esc(c.company_type)}</span>` : ''}
         ${location ? `<span>&#128205; ${esc(location)}</span>` : ''}
@@ -164,6 +188,7 @@ function openDetail(id) {
       ${detailItem('Added', new Date(c.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }))}
     </div>
     ${c.notes ? `<div class="detail-notes">${esc(c.notes)}</div>` : ''}
+    ${c.stage === 'Lost/Disqualified' && c.lost_reason ? `<div class="detail-lost-reason"><strong>Lost Reason:</strong> ${esc(c.lost_reason)}</div>` : ''}
 
     ${!viewerMode ? `<div class="stage-move-bar">
       <label>Move to Stage:</label>
@@ -180,9 +205,13 @@ function openDetail(id) {
   if (!viewerMode) {
     body.querySelectorAll('.stage-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
-        await api('PATCH', `/api/companies/${id}`, { stage: btn.dataset.stage });
-        await loadCompanies();
-        openDetail(id); // refresh detail
+        if (btn.dataset.stage === 'Lost/Disqualified' && c.stage !== 'Lost/Disqualified') {
+          openLostReasonModal(id);
+        } else {
+          await api('PATCH', `/api/companies/${id}`, { stage: btn.dataset.stage });
+          await loadCompanies();
+          openDetail(id);
+        }
       });
     });
   }
@@ -223,6 +252,59 @@ function openDetail(id) {
 
   loadDocuments(id);
 
+  // Comments section
+  const commentsSection = document.createElement('div');
+  commentsSection.className = 'comments-section';
+  commentsSection.innerHTML = `
+    <div class="comments-header">
+      <span class="comments-section-title">Comments</span>
+    </div>
+    ${!viewerMode ? `<div class="comment-form">
+      <textarea id="commentInput" placeholder="Add a comment..." rows="1"></textarea>
+      <button id="commentSubmit">Post</button>
+    </div>` : ''}
+    <div id="detailComments"><em class="comments-empty">Loading...</em></div>
+  `;
+  body.appendChild(commentsSection);
+
+  if (!viewerMode) {
+    document.getElementById('commentSubmit').addEventListener('click', async () => {
+      const input = document.getElementById('commentInput');
+      const content = input.value.trim();
+      if (!content) return;
+      try {
+        await api('POST', `/api/companies/${id}/comments`, { content });
+        input.value = '';
+        loadComments(id);
+        loadActivity(id);
+      } catch (err) {
+        alert('Error posting comment: ' + err.message);
+      }
+    });
+  }
+
+  loadComments(id);
+
+  // Activity log section
+  const activitySection = document.createElement('div');
+  activitySection.className = 'activity-section';
+  activitySection.innerHTML = `
+    <div class="activity-header" id="activityToggle">
+      <span class="activity-section-title">Activity Log</span>
+      <span class="activity-toggle">Show</span>
+    </div>
+    <div id="detailActivity" style="display:none"><em class="activity-empty">Loading...</em></div>
+  `;
+  body.appendChild(activitySection);
+
+  let activityVisible = false;
+  document.getElementById('activityToggle').addEventListener('click', () => {
+    activityVisible = !activityVisible;
+    document.getElementById('detailActivity').style.display = activityVisible ? '' : 'none';
+    document.querySelector('.activity-toggle').textContent = activityVisible ? 'Hide' : 'Show';
+    if (activityVisible) loadActivity(id);
+  });
+
   document.getElementById('detailOverlay').classList.add('active');
 }
 
@@ -256,7 +338,7 @@ function openEditModal(id) {
   document.getElementById('saveBtn').textContent = 'Save Changes';
   document.getElementById('companyId').value = id;
 
-  const fields = ['name', 'company_type', 'street_address', 'city', 'state', 'zip', 'website', 'nda', 'opportunity_owner', 'revenue', 'ebitda', 'employees', 'contact_name', 'contact_email', 'contact_phone', 'stage', 'notes'];
+  const fields = ['name', 'company_type', 'street_address', 'city', 'state', 'zip', 'website', 'nda', 'opportunity_owner', 'revenue', 'ebitda', 'employees', 'contact_name', 'contact_email', 'contact_phone', 'stage', 'notes', 'lost_reason'];
   fields.forEach(f => {
     const el = document.getElementById(f);
     if (el) el.value = c[f] || '';
@@ -363,6 +445,13 @@ document.getElementById('filterType').addEventListener('change', e => {
   render();
 });
 
+document.getElementById('sortSelect').addEventListener('change', e => {
+  sortBy = e.target.value;
+  render();
+});
+
+document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
+
 document.getElementById('clearFiltersBtn').addEventListener('click', () => {
   filters.search = '';
   filters.state = '';
@@ -421,6 +510,144 @@ function formatBytes(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
+// ===== Comments =====
+async function loadComments(companyId) {
+  try {
+    const comments = await api('GET', `/api/companies/${companyId}/comments`);
+    renderComments(comments);
+  } catch (_) {}
+}
+
+function renderComments(comments) {
+  const container = document.getElementById('detailComments');
+  if (!container) return;
+  if (!comments.length) {
+    container.innerHTML = '<em class="comments-empty">No comments yet</em>';
+    return;
+  }
+  container.innerHTML = comments.map(c => {
+    const dateStr = new Date(c.created_at).toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
+    });
+    return `
+      <div class="comment-item">
+        <div class="comment-text">${esc(c.content)}</div>
+        <div class="comment-date">${dateStr}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ===== Activity Log =====
+async function loadActivity(companyId) {
+  try {
+    const logs = await api('GET', `/api/companies/${companyId}/activity`);
+    renderActivity(logs);
+  } catch (_) {}
+}
+
+function renderActivity(logs) {
+  const container = document.getElementById('detailActivity');
+  if (!container) return;
+  if (!logs.length) {
+    container.innerHTML = '<em class="activity-empty">No activity yet</em>';
+    return;
+  }
+  container.innerHTML = logs.map(log => {
+    const dateStr = new Date(log.created_at).toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
+    });
+    let iconClass = 'created';
+    let icon = '+';
+    if (log.action === 'Stage Change')       { iconClass = 'stage-change'; icon = '\u2192'; }
+    else if (log.action.includes('Document')) { iconClass = 'document'; icon = '\uD83D\uDCC4'; }
+    else if (log.action === 'Comment Added')  { iconClass = 'comment'; icon = '\uD83D\uDCAC'; }
+    return `
+      <div class="activity-item">
+        <div class="activity-icon ${iconClass}">${icon}</div>
+        <div class="activity-content">
+          <div class="activity-action">${esc(log.action)}</div>
+          ${log.details ? `<div class="activity-details" title="${esc(log.details)}">${esc(log.details)}</div>` : ''}
+        </div>
+        <div class="activity-date">${dateStr}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ===== CSV Export =====
+function exportCSV() {
+  const filtered = getFilteredCompanies();
+  const headers = ['Name','Type','Stage','Street Address','City','State','ZIP','Contact Name','Contact Email','Contact Phone','Revenue','EBITDA','Employees','Website','NDA','Opportunity Owner','Lost Reason','Notes','Created','Updated'];
+  const fields = ['name','company_type','stage','street_address','city','state','zip','contact_name','contact_email','contact_phone','revenue','ebitda','employees','website','nda','opportunity_owner','lost_reason','notes','created_at','updated_at'];
+
+  const csvEsc = (val) => {
+    if (!val) return '';
+    const str = String(val);
+    if (str.includes(',') || str.includes('"') || str.includes('\n')) return '"' + str.replace(/"/g, '""') + '"';
+    return str;
+  };
+
+  const rows = [headers.join(',')];
+  filtered.forEach(c => rows.push(fields.map(f => csvEsc(c[f])).join(',')));
+
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `pipeline-export-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ===== Lost Reason Modal =====
+let lostReasonCompanyId = null;
+
+function openLostReasonModal(companyId) {
+  lostReasonCompanyId = companyId;
+  document.getElementById('lostReasonSelect').value = '';
+  document.getElementById('lostReasonOther').value = '';
+  document.getElementById('lostReasonOtherGroup').style.display = 'none';
+  document.getElementById('lostReasonOverlay').classList.add('active');
+}
+
+function closeLostReasonModal() {
+  document.getElementById('lostReasonOverlay').classList.remove('active');
+  lostReasonCompanyId = null;
+}
+
+document.getElementById('lostReasonSelect').addEventListener('change', (e) => {
+  document.getElementById('lostReasonOtherGroup').style.display = e.target.value === 'Other' ? '' : 'none';
+});
+
+document.getElementById('lostReasonClose').addEventListener('click', closeLostReasonModal);
+document.getElementById('lostReasonCancel').addEventListener('click', closeLostReasonModal);
+document.getElementById('lostReasonOverlay').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('lostReasonOverlay')) closeLostReasonModal();
+});
+
+document.getElementById('lostReasonConfirm').addEventListener('click', async () => {
+  if (!lostReasonCompanyId) return;
+  let reason = document.getElementById('lostReasonSelect').value;
+  if (reason === 'Other') {
+    const other = document.getElementById('lostReasonOther').value.trim();
+    reason = other || 'Other';
+  }
+  if (!reason) {
+    alert('Please select a reason.');
+    return;
+  }
+  await api('PATCH', `/api/companies/${lostReasonCompanyId}`, {
+    stage: 'Lost/Disqualified',
+    lost_reason: reason
+  });
+  closeLostReasonModal();
+  await loadCompanies();
+  openDetail(lostReasonCompanyId);
+});
+
 // ===== Lost/Disqualified View =====
 let lostMode = false;
 let lostSearch = '';
@@ -477,6 +704,7 @@ function renderLostView() {
         <td>${esc(location || '\u2014')}</td>
         <td>${esc(c.revenue || '\u2014')}</td>
         <td>${esc(c.nda || '\u2014')}</td>
+        <td>${esc(c.lost_reason || '\u2014')}</td>
         <td>${esc(c.opportunity_owner || '\u2014')}</td>
         <td>${dateStr}</td>
       </tr>
