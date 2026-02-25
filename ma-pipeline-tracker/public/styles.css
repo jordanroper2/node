@@ -1105,6 +1105,121 @@ form { padding: 20px 24px; }
   font-weight: 700;
 }
 
+/* ===== Priority Markets Bar ===== */
+.priority-bar {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-bottom: 1px solid #f59e0b;
+  padding: 10px 24px;
+}
+
+.priority-bar-inner {
+  max-width: 1600px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.priority-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.priority-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #92400e;
+}
+
+.btn-priority-edit {
+  background: none;
+  border: 1px solid #d97706;
+  border-radius: 4px;
+  font-size: 0.82rem;
+  color: #92400e;
+  cursor: pointer;
+  padding: 2px 8px;
+  line-height: 1.2;
+  transition: background 0.15s;
+}
+
+.btn-priority-edit:hover { background: rgba(217,119,6,0.15); }
+
+.priority-cards {
+  display: flex;
+  gap: 12px;
+  flex: 1;
+}
+
+.priority-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.75);
+  border: 1px solid rgba(217,119,6,0.3);
+  border-radius: 8px;
+  padding: 6px 14px;
+}
+
+.priority-card-empty { opacity: 0.4; }
+
+.priority-rank {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #d97706;
+}
+
+.priority-market-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #92400e;
+}
+
+.priority-count {
+  font-size: 0.72rem;
+  color: #b45309;
+  font-weight: 500;
+}
+
+.priority-empty {
+  font-size: 0.8rem;
+  color: #92400e;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.priority-edit-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.priority-edit-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #d97706;
+}
+
+.priority-edit-select {
+  padding: 5px 8px;
+  border: 1px solid #d97706;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  background: var(--white);
+  color: var(--gray-900);
+  cursor: pointer;
+}
+
+.priority-edit-form .btn {
+  padding: 5px 12px;
+  font-size: 0.78rem;
+}
+
 /* ===== Analytics Button ===== */
 .btn-analytics {
   background: var(--blue-700);

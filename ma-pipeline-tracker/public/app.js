@@ -81,6 +81,7 @@ async function loadCompanies() {
   companies = await api('GET', '/api/companies');
   populateOwnerFilter();
   render();
+  renderPriorityBar();
   if (lostMode) renderLostView();
   if (analyticsMode) renderAnalytics();
 }
@@ -648,6 +649,111 @@ function exportCSV() {
   URL.revokeObjectURL(url);
 }
 
+// ===== Priority Markets =====
+let priorityMarkets = ['', '', '']; // exactly 3 slots
+let priorityEditMode = false;
+
+async function loadPriorityMarkets() {
+  try {
+    const row = await api('GET', '/api/settings/priority_markets');
+    if (row && row.value) {
+      const parsed = JSON.parse(row.value);
+      // Ensure always exactly 3 slots
+      priorityMarkets = [parsed[0] || '', parsed[1] || '', parsed[2] || ''];
+    }
+  } catch (_) {}
+  renderPriorityBar();
+}
+
+async function savePriorityMarkets(markets) {
+  priorityMarkets = markets;
+  await api('PUT', '/api/settings/priority_markets', { value: JSON.stringify(markets) });
+  renderPriorityBar();
+}
+
+function renderPriorityBar() {
+  const cardsEl = document.getElementById('priorityCards');
+  const editFormEl = document.getElementById('priorityEditForm');
+
+  if (priorityEditMode) {
+    cardsEl.style.display = 'none';
+    editFormEl.style.display = 'flex';
+    renderPriorityEditForm(editFormEl);
+  } else {
+    editFormEl.style.display = 'none';
+    cardsEl.style.display = 'flex';
+    renderPriorityCards(cardsEl);
+  }
+}
+
+function renderPriorityCards(container) {
+  // Count active (non-lost) companies per state
+  const active = companies.filter(c => c.stage !== 'Lost/Disqualified');
+
+  const hasAny = priorityMarkets.some(m => m);
+  if (!hasAny) {
+    container.innerHTML = '<span class="priority-empty">No priority markets set — click ✎ to add up to 3</span>';
+    return;
+  }
+
+  container.innerHTML = priorityMarkets.map((market, i) => {
+    if (!market) {
+      return `<div class="priority-card priority-card-empty">
+        <span class="priority-rank">#${i + 1}</span>
+        <span class="priority-market-name">—</span>
+      </div>`;
+    }
+    const count = active.filter(c => c.state === market).length;
+    return `<div class="priority-card">
+      <span class="priority-rank">#${i + 1}</span>
+      <span class="priority-market-name">${esc(market)}</span>
+      <span class="priority-count">${count} deal${count !== 1 ? 's' : ''}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderPriorityEditForm(container) {
+  // Build unique sorted state list from companies + a full US state list for flexibility
+  const usStates = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
+
+  const options = usStates.map(s => `<option value="${s}">${s}</option>`).join('');
+
+  container.innerHTML = `
+    <span class="priority-edit-label">#1</span>
+    <select class="priority-edit-select" id="pm0"><option value="">— None —</option>${options}</select>
+    <span class="priority-edit-label">#2</span>
+    <select class="priority-edit-select" id="pm1"><option value="">— None —</option>${options}</select>
+    <span class="priority-edit-label">#3</span>
+    <select class="priority-edit-select" id="pm2"><option value="">— None —</option>${options}</select>
+    <button class="btn btn-primary" id="pmSaveBtn">Save</button>
+    <button class="btn btn-secondary" id="pmCancelBtn">Cancel</button>
+  `;
+
+  // Set current values
+  priorityMarkets.forEach((m, i) => {
+    document.getElementById(`pm${i}`).value = m || '';
+  });
+
+  document.getElementById('pmSaveBtn').addEventListener('click', async () => {
+    const markets = [0, 1, 2].map(i => document.getElementById(`pm${i}`).value);
+    priorityEditMode = false;
+    document.getElementById('priorityEditBtn').title = 'Edit priority markets';
+    await savePriorityMarkets(markets);
+  });
+
+  document.getElementById('pmCancelBtn').addEventListener('click', () => {
+    priorityEditMode = false;
+    document.getElementById('priorityEditBtn').title = 'Edit priority markets';
+    renderPriorityBar();
+  });
+}
+
+document.getElementById('priorityEditBtn').addEventListener('click', () => {
+  if (viewerMode) return;
+  priorityEditMode = !priorityEditMode;
+  renderPriorityBar();
+});
+
 // ===== Lost Reason Modal =====
 let lostReasonCompanyId = null;
 
@@ -1055,6 +1161,7 @@ function applyViewerMode() {
   document.getElementById('detailEdit').style.display = 'none';
   document.getElementById('selectModeBtn').style.display = 'none';
   document.getElementById('exportCsvBtn').style.display = 'none';
+  document.getElementById('priorityEditBtn').style.display = 'none';
 }
 
 // ===== Init =====
@@ -1066,5 +1173,5 @@ function applyViewerMode() {
       applyViewerMode();
     }
   } catch (_) {}
-  await loadCompanies();
+  await Promise.all([loadCompanies(), loadPriorityMarkets()]);
 })();
