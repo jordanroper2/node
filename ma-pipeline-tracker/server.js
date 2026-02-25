@@ -83,6 +83,11 @@ db.exec(`
     company_id INTEGER NOT NULL,
     content TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT
   )
 `);
 
@@ -142,7 +147,7 @@ app.get('/api/me', (req, res) => {
 // ===== Viewer write-block middleware =====
 
 app.use((req, res, next) => {
-  if (['POST', 'PATCH', 'DELETE'].includes(req.method) && req.cookies[AUTH_COOKIE] === VIEW_AUTH_VALUE) {
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) && req.cookies[AUTH_COOKIE] === VIEW_AUTH_VALUE) {
     return res.status(403).json({ error: 'View-only access: modifications not permitted' });
   }
   next();
@@ -333,6 +338,21 @@ app.post('/api/companies/:id/comments', (req, res) => {
   );
   const comment = db.prepare('SELECT * FROM comments WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json(comment);
+});
+
+// ===== Settings endpoints =====
+
+app.get('/api/settings/:key', (req, res) => {
+  const row = db.prepare('SELECT * FROM settings WHERE key = ?').get(req.params.key);
+  if (!row) return res.json({ key: req.params.key, value: null });
+  res.json(row);
+});
+
+app.put('/api/settings/:key', (req, res) => {
+  const { value } = req.body;
+  db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value')
+    .run(req.params.key, value);
+  res.json({ key: req.params.key, value });
 });
 
 app.listen(PORT, () => {

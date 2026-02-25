@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>M&A Pipeline Tracker — Origination</title>
-  <link rel="stylesheet" href="styles.css?v=7" />
+  <link rel="stylesheet" href="styles.css?v=8" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
@@ -79,6 +79,18 @@
       <button class="btn btn-select-mode" id="selectModeBtn">&#9635; Select</button>
       <button class="btn btn-filter-clear" id="clearFiltersBtn" style="display:none">&#10005; Clear</button>
       <span class="filter-result-count" id="filterResultCount" style="display:none"></span>
+    </div>
+  </div>
+
+  <!-- Priority Markets Bar -->
+  <div class="priority-bar" id="priorityBar">
+    <div class="priority-bar-inner">
+      <div class="priority-label">
+        <span class="priority-title">&#9733; Priority Markets</span>
+        <button class="btn-priority-edit" id="priorityEditBtn" title="Edit priority markets">&#9998;</button>
+      </div>
+      <div class="priority-cards" id="priorityCards"></div>
+      <div class="priority-edit-form" id="priorityEditForm" style="display:none"></div>
     </div>
   </div>
 
@@ -379,6 +391,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="app.js?v=9"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>
