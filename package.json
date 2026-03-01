@@ -1,0 +1,10 @@
+{
+  "name": "book-quotes-pwa",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "serve docs -l $PORT"
+  },
+  "dependencies": {
+    "serve": "^14.2.3"
+  }
+}
