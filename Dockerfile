@@ -4,4 +4,4 @@ COPY package.json .
 RUN npm install
 COPY docs/ ./docs/
 EXPOSE 3000
-CMD ["sh", "-c", "npx serve docs -l ${PORT:-3000}"]
+CMD ["sh", "-c", "npx serve docs -l tcp://0.0.0.0:${PORT:-3000}"]
