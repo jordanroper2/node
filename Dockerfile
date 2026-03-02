@@ -1,6 +1,5 @@
-FROM node:20-alpine
-WORKDIR /app
-RUN npm install -g serve
-COPY docs/ ./docs/
+FROM nginx:alpine
+COPY docs/ /usr/share/nginx/html/
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 3000
-CMD ["sh", "-c", "serve docs -l tcp://0.0.0.0:${PORT:-3000}"]
+CMD ["/bin/sh", "-c", "sed -i \"s/__PORT__/${PORT:-3000}/g\" /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
