@@ -154,6 +154,20 @@
     }
     .delete-btn:hover { color: #ef4444; background: rgba(239,68,68,0.08); }
 
+    .edit-btn {
+      background: none;
+      border: none;
+      color: #c4c9d4;
+      cursor: pointer;
+      font-size: 15px;
+      padding: 4px 6px;
+      border-radius: 8px;
+      transition: color 0.2s, background 0.2s;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .edit-btn:hover { color: var(--accent); background: rgba(82,183,136,0.08); }
+
     /* Empty state */
     .empty-state {
       flex: 1;
@@ -370,13 +384,15 @@
     </div>
     <div class="form-group">
       <label>Book Title</label>
-      <input type="text" id="book-input" placeholder="e.g. Atomic Habits" maxlength="100" />
+      <input type="text" id="book-input" placeholder="e.g. Atomic Habits" maxlength="100" list="book-suggestions" autocomplete="off" />
+      <datalist id="book-suggestions"></datalist>
     </div>
     <div class="form-group">
       <label>Author</label>
-      <input type="text" id="author-input" placeholder="e.g. James Clear" maxlength="100" />
+      <input type="text" id="author-input" placeholder="e.g. James Clear" maxlength="100" list="author-suggestions" autocomplete="off" />
+      <datalist id="author-suggestions"></datalist>
     </div>
-    <button class="submit-btn" onclick="saveQuote()">Save Quote</button>
+    <button class="submit-btn" id="submit-btn" onclick="saveQuote()">Save Quote</button>
     <div class="spacer"></div>
   </div>
 
@@ -427,6 +443,7 @@
   const STORAGE_KEY = 'book_quotes_v1';
   const GITHUB_KEY  = 'book_quotes_github';
   let ghFileSha = null; // cached SHA of quotes.json on GitHub
+  let editingId = null;
 
   // ─── Local storage ────────────────────────────────────────────
 
@@ -492,6 +509,7 @@
             ${q.author ? `<span class="book-author">— ${escHtml(q.author)}</span>` : ''}
           </div>
           <span class="quote-date">${formatDate(q.date)}</span>
+          <button class="edit-btn" onclick="editQuote('${q.id}')" title="Edit">✎</button>
           <button class="delete-btn" onclick="deleteQuote('${q.id}')" title="Delete">×</button>
         </div>
       </div>
@@ -510,8 +528,18 @@
     if (!text) { showToast('Please enter a quote.'); return; }
     if (!book)  { showToast('Please enter a book title.'); return; }
 
-    const quotes = loadQuotes();
-    quotes.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2), text, book, author, date: new Date().toISOString() });
+    let quotes = loadQuotes();
+    const isEditing = !!editingId;
+
+    if (isEditing) {
+      const idx = quotes.findIndex(q => q.id === editingId);
+      if (idx !== -1) quotes[idx] = { ...quotes[idx], text, book, author };
+      editingId = null;
+      document.getElementById('submit-btn').textContent = 'Save Quote';
+    } else {
+      quotes.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2), text, book, author, date: new Date().toISOString() });
+    }
+
     saveQuotes(quotes);
 
     document.getElementById('quote-input').value  = '';
@@ -522,12 +550,24 @@
     switchTab('quotes');
 
     if (getGitHubConfig()) {
-      showToast('Saving & syncing…');
+      showToast(isEditing ? 'Updating & syncing…' : 'Saving & syncing…');
       const ok = await syncToGitHub(quotes);
-      showToast(ok ? 'Saved & synced!' : 'Saved locally (sync failed)');
+      showToast(ok ? (isEditing ? 'Updated & synced!' : 'Saved & synced!') : (isEditing ? 'Updated locally (sync failed)' : 'Saved locally (sync failed)'));
     } else {
-      showToast('Quote saved!');
+      showToast(isEditing ? 'Quote updated!' : 'Quote saved!');
     }
+  }
+
+  function editQuote(id) {
+    const q = loadQuotes().find(q => q.id === id);
+    if (!q) return;
+    editingId = id;
+    document.getElementById('quote-input').value  = q.text;
+    document.getElementById('book-input').value   = q.book;
+    document.getElementById('author-input').value = q.author || '';
+    updateCharCount();
+    document.getElementById('submit-btn').textContent = 'Update Quote';
+    switchTab('add');
   }
 
   async function deleteQuote(id) {
@@ -552,6 +592,16 @@
   }
 
   function switchTab(tab) {
+    // Reset edit state when navigating away from add tab
+    if (tab !== 'add' && editingId) {
+      editingId = null;
+      document.getElementById('submit-btn').textContent = 'Save Quote';
+      document.getElementById('quote-input').value  = '';
+      document.getElementById('book-input').value   = '';
+      document.getElementById('author-input').value = '';
+      updateCharCount();
+    }
+
     document.querySelectorAll('nav button').forEach((b, i) => {
       b.classList.toggle('active',
         (tab === 'quotes'   && i === 0) ||
@@ -563,8 +613,16 @@
     document.getElementById('add-view').classList.toggle('active', tab === 'add');
     document.getElementById('settings-view').classList.toggle('active', tab === 'settings');
     if (tab === 'quotes')   renderQuotes();
-    if (tab === 'add')      document.getElementById('quote-input').focus();
+    if (tab === 'add')      { updateSuggestions(); document.getElementById('quote-input').focus(); }
     if (tab === 'settings') loadSettingsForm();
+  }
+
+  function updateSuggestions() {
+    const quotes = loadQuotes();
+    const books   = [...new Set(quotes.map(q => q.book))].sort((a, b) => a.localeCompare(b));
+    const authors = [...new Set(quotes.map(q => q.author).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    document.getElementById('book-suggestions').innerHTML   = books.map(b => `<option value="${escHtml(b)}">`).join('');
+    document.getElementById('author-suggestions').innerHTML = authors.map(a => `<option value="${escHtml(a)}">`).join('');
   }
 
   let toastTimer;
