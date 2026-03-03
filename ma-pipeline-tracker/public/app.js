@@ -805,6 +805,7 @@ document.getElementById('lostReasonConfirm').addEventListener('click', async () 
 function openAnalyticsView() {
   if (lostMode) closeLostView();
   if (mapMode) closeMapView();
+  if (agendaMode) closeAgendaView();
   analyticsMode = true;
   document.getElementById('pipelineWrapper').style.display = 'none';
   document.getElementById('filterBar').style.display = 'none';
@@ -961,6 +962,7 @@ let lostSearch = '';
 function openLostView() {
   if (mapMode) closeMapView();
   if (analyticsMode) closeAnalyticsView();
+  if (agendaMode) closeAgendaView();
   lostMode = true;
   document.getElementById('pipelineWrapper').style.display = 'none';
   document.getElementById('filterBar').style.display = 'none';
@@ -1064,6 +1066,7 @@ async function geocodeAddress(address) {
 async function openMapView() {
   if (lostMode) closeLostView();
   if (analyticsMode) closeAnalyticsView();
+  if (agendaMode) closeAgendaView();
   mapMode = true;
   document.getElementById('pipelineWrapper').style.display = 'none';
   document.getElementById('mapWrapper').style.display = 'flex';
@@ -1154,6 +1157,117 @@ document.getElementById('mapViewBtn').addEventListener('click', () => {
   else openMapView();
 });
 
+// ===== Weekly Agenda =====
+let agendaMode = false;
+let agendaItems = [];
+
+async function loadAgenda() {
+  agendaItems = await api('GET', '/api/agenda');
+}
+
+function openAgendaView() {
+  if (lostMode) closeLostView();
+  if (analyticsMode) closeAnalyticsView();
+  if (mapMode) closeMapView();
+  agendaMode = true;
+  document.getElementById('pipelineWrapper').style.display = 'none';
+  document.getElementById('filterBar').style.display = 'none';
+  document.getElementById('agendaWrapper').style.display = '';
+  document.getElementById('agendaViewBtn').textContent = '\u2190 Board View';
+  populateAgendaCompanySelect();
+  loadAgenda().then(renderAgendaView);
+}
+
+function closeAgendaView() {
+  agendaMode = false;
+  document.getElementById('pipelineWrapper').style.display = '';
+  document.getElementById('filterBar').style.display = '';
+  document.getElementById('agendaWrapper').style.display = 'none';
+  document.getElementById('agendaViewBtn').textContent = '\uD83D\uDCC5 Weekly Agenda';
+}
+
+function populateAgendaCompanySelect() {
+  const sel = document.getElementById('agendaCompany');
+  const sorted = companies
+    .filter(c => c.stage !== 'Lost/Disqualified')
+    .sort((a, b) => a.name.localeCompare(b.name));
+  sel.innerHTML = '<option value="">— No deal —</option>' +
+    sorted.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+}
+
+function renderAgendaView() {
+  const tbody = document.getElementById('agendaTableBody');
+  const emptyEl = document.getElementById('agendaEmpty');
+  const countEl = document.getElementById('agendaCount');
+  const tableEl = tbody.closest('table');
+
+  countEl.textContent = `${agendaItems.length} ${agendaItems.length === 1 ? 'item' : 'items'}`;
+
+  if (!agendaItems.length) {
+    tbody.innerHTML = '';
+    tableEl.style.display = 'none';
+    emptyEl.style.display = '';
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+  tableEl.style.display = '';
+  const today = new Date().toISOString().slice(0, 10);
+  tbody.innerHTML = agendaItems.map(item => {
+    const dateStr = new Date(item.meeting_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const company = companies.find(c => c.id === item.company_id);
+    const isPast = item.meeting_date < today;
+    return `
+      <tr class="agenda-row${isPast ? ' agenda-row-past' : ''}" data-company-id="${item.company_id || ''}">
+        <td class="agenda-date-cell">${dateStr}</td>
+        <td>${company ? esc(company.name) : '\u2014'}</td>
+        <td>${esc(item.description)}</td>
+        <td class="agenda-actions">
+          <button class="btn-agenda-delete" data-id="${item.id}" title="Delete">&times;</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  tbody.querySelectorAll('.agenda-row').forEach(row => {
+    row.addEventListener('click', e => {
+      if (e.target.closest('.btn-agenda-delete')) return;
+      const companyId = Number(row.dataset.companyId);
+      if (companyId) openDetail(companyId);
+    });
+  });
+
+  tbody.querySelectorAll('.btn-agenda-delete').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await api('DELETE', `/api/agenda/${btn.dataset.id}`);
+      await loadAgenda();
+      renderAgendaView();
+    });
+  });
+}
+
+document.getElementById('agendaViewBtn').addEventListener('click', () => {
+  if (agendaMode) closeAgendaView();
+  else openAgendaView();
+});
+
+document.getElementById('agendaAddBtn').addEventListener('click', async () => {
+  const date = document.getElementById('agendaDate').value;
+  const desc = document.getElementById('agendaDesc').value.trim();
+  const companyId = document.getElementById('agendaCompany').value;
+  if (!date || !desc) return;
+  await api('POST', '/api/agenda', {
+    meeting_date: date,
+    description: desc,
+    company_id: companyId ? Number(companyId) : null,
+  });
+  document.getElementById('agendaDate').value = '';
+  document.getElementById('agendaDesc').value = '';
+  document.getElementById('agendaCompany').value = '';
+  await loadAgenda();
+  renderAgendaView();
+});
+
 // ===== Viewer mode =====
 function applyViewerMode() {
   document.getElementById('addCompanyBtn').style.display = 'none';
@@ -1162,6 +1276,7 @@ function applyViewerMode() {
   document.getElementById('selectModeBtn').style.display = 'none';
   document.getElementById('exportCsvBtn').style.display = 'none';
   document.getElementById('priorityEditBtn').style.display = 'none';
+  document.getElementById('agendaAddForm').style.display = 'none';
 }
 
 // ===== Init =====

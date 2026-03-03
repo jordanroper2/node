@@ -88,6 +88,14 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
     value TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS agenda (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    meeting_date TEXT NOT NULL,
+    description TEXT NOT NULL,
+    company_id INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )
 `);
 
@@ -356,6 +364,25 @@ app.put('/api/settings/:key', (req, res) => {
   db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value')
     .run(req.params.key, value);
   res.json({ key: req.params.key, value });
+});
+
+// ===== Agenda endpoints =====
+
+app.get('/api/agenda', (req, res) => {
+  res.json(db.prepare('SELECT * FROM agenda ORDER BY meeting_date ASC, id ASC').all());
+});
+
+app.post('/api/agenda', (req, res) => {
+  const { meeting_date, description, company_id } = req.body;
+  if (!meeting_date || !description) return res.status(400).json({ error: 'meeting_date and description are required' });
+  const result = db.prepare('INSERT INTO agenda (meeting_date, description, company_id) VALUES (?, ?, ?)')
+    .run(meeting_date, description.trim(), company_id || null);
+  res.status(201).json(db.prepare('SELECT * FROM agenda WHERE id = ?').get(result.lastInsertRowid));
+});
+
+app.delete('/api/agenda/:id', (req, res) => {
+  db.prepare('DELETE FROM agenda WHERE id = ?').run(Number(req.params.id));
+  res.json({ ok: true });
 });
 
 app.listen(PORT, () => {

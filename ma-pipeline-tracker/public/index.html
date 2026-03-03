@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>M&A Pipeline Tracker — Origination</title>
-  <link rel="stylesheet" href="styles.css?v=10" />
+  <link rel="stylesheet" href="styles.css?v=11" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
@@ -20,6 +20,7 @@
         <button class="btn btn-analytics" id="analyticsBtn">&#128202; Analytics</button>
         <button class="btn btn-map" id="mapViewBtn">&#128205; Map View</button>
         <button class="btn btn-lost" id="lostViewBtn">Lost/Disqualified</button>
+        <button class="btn btn-agenda" id="agendaViewBtn">&#128197; Weekly Agenda</button>
         <button class="btn btn-secondary" id="logoutBtn">Sign Out</button>
       </div>
     </div>
@@ -139,6 +140,38 @@
           <tbody id="lostTableBody"></tbody>
         </table>
         <div id="lostEmpty" class="lost-empty" style="display:none">No lost/disqualified opportunities yet</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Weekly Agenda View -->
+  <div class="agenda-wrapper" id="agendaWrapper" style="display:none">
+    <div class="agenda-inner">
+      <div class="agenda-toolbar">
+        <h2 class="agenda-title">&#128197; Weekly Agenda</h2>
+        <span class="agenda-count" id="agendaCount"></span>
+      </div>
+      <div class="agenda-add-form" id="agendaAddForm">
+        <input type="date" id="agendaDate" class="agenda-date-input" />
+        <select id="agendaCompany" class="filter-select agenda-company-select">
+          <option value="">— No deal —</option>
+        </select>
+        <input type="text" id="agendaDesc" class="filter-input agenda-desc-input" placeholder="Topic / description..." />
+        <button class="btn btn-primary" id="agendaAddBtn">+ Add</button>
+      </div>
+      <div class="agenda-table-wrap">
+        <table class="agenda-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Deal</th>
+              <th>Topic</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="agendaTableBody"></tbody>
+        </table>
+        <div id="agendaEmpty" class="agenda-empty" style="display:none">No agenda items yet — add one above</div>
       </div>
     </div>
   </div>
@@ -391,6 +424,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="app.js?v=12"></script>
+  <script src="app.js?v=13"></script>
 </body>
 </html>
