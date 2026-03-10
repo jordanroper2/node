@@ -49,6 +49,7 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     company_type TEXT,
+    opportunity_type TEXT,
     street_address TEXT,
     city TEXT,
     state TEXT,
@@ -107,6 +108,7 @@ if (!existingCols.includes('nda')) db.exec('ALTER TABLE companies ADD COLUMN nda
 if (!existingCols.includes('opportunity_owner')) db.exec('ALTER TABLE companies ADD COLUMN opportunity_owner TEXT');
 if (!existingCols.includes('lost_reason')) db.exec('ALTER TABLE companies ADD COLUMN lost_reason TEXT');
 if (!existingCols.includes('stage_entered_at')) db.exec('ALTER TABLE companies ADD COLUMN stage_entered_at DATETIME');
+if (!existingCols.includes('opportunity_type')) db.exec('ALTER TABLE companies ADD COLUMN opportunity_type TEXT');
 
 // Data migration: rename stages
 db.prepare("UPDATE companies SET stage = 'Prospecting' WHERE stage = 'Pre-Qualification'").run();
@@ -192,7 +194,7 @@ app.get('/api/companies/:id', (req, res) => {
 // POST create company
 app.post('/api/companies', (req, res) => {
   const {
-    name, company_type, street_address, city, state, zip,
+    name, company_type, opportunity_type, street_address, city, state, zip,
     contact_name, contact_email, contact_phone,
     revenue, ebitda, employees, website,
     stage, notes, nda, opportunity_owner, lost_reason
@@ -202,10 +204,10 @@ app.post('/api/companies', (req, res) => {
 
   const finalStage = stage || 'Prospecting';
   const result = db.prepare(`
-    INSERT INTO companies (name, company_type, street_address, city, state, zip, contact_name, contact_email, contact_phone, revenue, ebitda, employees, website, stage, notes, nda, opportunity_owner, lost_reason)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO companies (name, company_type, opportunity_type, street_address, city, state, zip, contact_name, contact_email, contact_phone, revenue, ebitda, employees, website, stage, notes, nda, opportunity_owner, lost_reason)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
-    name, company_type, street_address, city, state, zip,
+    name, company_type, opportunity_type, street_address, city, state, zip,
     contact_name, contact_email, contact_phone,
     revenue, ebitda, employees, website,
     finalStage, notes, nda, opportunity_owner, lost_reason
@@ -225,7 +227,7 @@ app.patch('/api/companies/:id', (req, res) => {
   if (!company) return res.status(404).json({ error: 'Company not found' });
 
   const fields = [
-    'name', 'company_type', 'street_address', 'city', 'state', 'zip',
+    'name', 'company_type', 'opportunity_type', 'street_address', 'city', 'state', 'zip',
     'contact_name', 'contact_email', 'contact_phone',
     'revenue', 'ebitda', 'employees', 'website',
     'stage', 'notes', 'nda', 'opportunity_owner', 'lost_reason'

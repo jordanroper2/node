@@ -214,7 +214,8 @@ function openDetail(id) {
   body.innerHTML = `
     <span class="detail-stage-badge" style="background:${stageColor}">${esc(c.stage)}</span>
     <div class="detail-grid">
-      ${detailItem('Company Type', c.company_type)}
+      ${detailItem('Target Type', c.company_type)}
+      ${detailItem('Opportunity Type', c.opportunity_type)}
       ${detailItem('NDA', c.nda)}
       ${detailItem('Opportunity Owner', c.opportunity_owner)}
       ${detailItem('Address', formatAddress(c))}
@@ -379,7 +380,7 @@ function openEditModal(id) {
   document.getElementById('saveBtn').textContent = 'Save Changes';
   document.getElementById('companyId').value = id;
 
-  const fields = ['name', 'company_type', 'street_address', 'city', 'state', 'zip', 'website', 'nda', 'opportunity_owner', 'revenue', 'ebitda', 'employees', 'contact_name', 'contact_email', 'contact_phone', 'stage', 'notes', 'lost_reason'];
+  const fields = ['name', 'company_type', 'opportunity_type', 'street_address', 'city', 'state', 'zip', 'website', 'nda', 'opportunity_owner', 'revenue', 'ebitda', 'employees', 'contact_name', 'contact_email', 'contact_phone', 'stage', 'notes', 'lost_reason'];
   fields.forEach(f => {
     const el = document.getElementById(f);
     if (el) el.value = c[f] || '';
@@ -634,8 +635,8 @@ function renderActivity(logs) {
 // ===== CSV Export =====
 function exportCSV() {
   const filtered = getFilteredCompanies();
-  const headers = ['Name','Type','Stage','Street Address','City','State','ZIP','Contact Name','Contact Email','Contact Phone','Revenue','EBITDA','Employees','Website','NDA','Opportunity Owner','Lost Reason','Notes','Created','Updated'];
-  const fields = ['name','company_type','stage','street_address','city','state','zip','contact_name','contact_email','contact_phone','revenue','ebitda','employees','website','nda','opportunity_owner','lost_reason','notes','created_at','updated_at'];
+  const headers = ['Name','Target Type','Opportunity Type','Stage','Street Address','City','State','ZIP','Contact Name','Contact Email','Contact Phone','Revenue','EBITDA','Employees','Website','NDA','Opportunity Owner','Lost Reason','Notes','Created','Updated'];
+  const fields = ['name','company_type','opportunity_type','stage','street_address','city','state','zip','contact_name','contact_email','contact_phone','revenue','ebitda','employees','website','nda','opportunity_owner','lost_reason','notes','created_at','updated_at'];
 
   const csvEsc = (val) => {
     if (!val) return '';
