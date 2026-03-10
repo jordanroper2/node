@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>M&A Pipeline Tracker — Origination</title>
+  <link rel="stylesheet" href="styles.css?v=11" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-left">
+        <h1>M&amp;A Pipeline Tracker</h1>
+        <span class="header-sub">Origination Stage</span>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-primary" id="addCompanyBtn">+ Add Company</button>
+        <button class="btn btn-export" id="exportCsvBtn">&#8615; Export CSV</button>
+        <button class="btn btn-analytics" id="analyticsBtn">&#128202; Analytics</button>
+        <button class="btn btn-map" id="mapViewBtn">&#128205; Map View</button>
+        <button class="btn btn-lost" id="lostViewBtn">Lost/Disqualified</button>
+        <button class="btn btn-agenda" id="agendaViewBtn">&#128197; Weekly Agenda</button>
+        <button class="btn btn-secondary" id="logoutBtn">Sign Out</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Stats bar -->
+  <div class="stats-bar">
+    <div class="stat" id="stat-total"><span class="stat-num">0</span><span class="stat-label">Total</span></div>
+    <div class="stat" id="stat-pre-qual"><span class="stat-num">0</span><span class="stat-label">Prospecting</span></div>
+    <div class="stat" id="stat-info-req"><span class="stat-num">0</span><span class="stat-label">Info Requested</span></div>
+    <div class="stat" id="stat-site-visit"><span class="stat-num">0</span><span class="stat-label">Site Visit</span></div>
+    <div class="stat" id="stat-prelim-dd"><span class="stat-num">0</span><span class="stat-label">Prelim DD</span></div>
+    <div class="stat" id="stat-qual"><span class="stat-num">0</span><span class="stat-label">Qualification</span></div>
+    <div class="stat" id="stat-approved"><span class="stat-num">0</span><span class="stat-label">Stage Gate</span></div>
+    <div class="stat" id="stat-closed"><span class="stat-num">0</span><span class="stat-label">Closed</span></div>
+    <div class="stat stat-lost-link" id="stat-lost"><span class="stat-num">0</span><span class="stat-label">Lost</span></div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar" id="filterBar">
+    <div class="filter-bar-inner">
+      <input type="text" id="filterSearch" class="filter-input" placeholder="&#128269; Search by name, city, or contact..." />
+      <select id="filterState" class="filter-select">
+        <option value="">All States</option>
+        <option>AL</option><option>AK</option><option>AZ</option><option>AR</option>
+        <option>CA</option><option>CO</option><option>CT</option><option>DE</option>
+        <option>FL</option><option>GA</option><option>HI</option><option>ID</option>
+        <option>IL</option><option>IN</option><option>IA</option><option>KS</option>
+        <option>KY</option><option>LA</option><option>ME</option><option>MD</option>
+        <option>MA</option><option>MI</option><option>MN</option><option>MS</option>
+        <option>MO</option><option>MT</option><option>NE</option><option>NV</option>
+        <option>NH</option><option>NJ</option><option>NM</option><option>NY</option>
+        <option>NC</option><option>ND</option><option>OH</option><option>OK</option>
+        <option>OR</option><option>PA</option><option>RI</option><option>SC</option>
+        <option>SD</option><option>TN</option><option>TX</option><option>UT</option>
+        <option>VT</option><option>VA</option><option>WA</option><option>WV</option>
+        <option>WI</option><option>WY</option>
+      </select>
+      <select id="filterType" class="filter-select">
+        <option value="">All Types</option>
+        <option>Platform</option>
+        <option>Add-On</option>
+        <option>Strategic Target</option>
+        <option>Bolt-On</option>
+        <option>Carve-Out</option>
+        <option>Other</option>
+      </select>
+      <select id="filterOwner" class="filter-select">
+        <option value="">All Owners</option>
+      </select>
+      <select id="sortSelect" class="filter-select">
+        <option value="newest">Newest First</option>
+        <option value="oldest">Oldest First</option>
+        <option value="name-az">Name A&#8594;Z</option>
+        <option value="name-za">Name Z&#8594;A</option>
+      </select>
+      <button class="btn btn-select-mode" id="selectModeBtn">&#9635; Select</button>
+      <button class="btn btn-filter-clear" id="clearFiltersBtn" style="display:none">&#10005; Clear</button>
+      <span class="filter-result-count" id="filterResultCount" style="display:none"></span>
+    </div>
+  </div>
+
+  <!-- Priority Markets Bar -->
+  <div class="priority-bar" id="priorityBar">
+    <div class="priority-bar-inner">
+      <div class="priority-label">
+        <span class="priority-title">&#9733; Priority Markets</span>
+        <button class="btn-priority-edit" id="priorityEditBtn" title="Edit priority markets">&#9998;</button>
+      </div>
+      <div class="priority-cards" id="priorityCards"></div>
+      <div class="priority-edit-form" id="priorityEditForm" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- Pipeline Board -->
+  <main class="pipeline-wrapper" id="pipelineWrapper">
+    <div class="pipeline-board" id="pipelineBoard">
+      <!-- Columns injected by JS -->
+    </div>
+  </main>
+
+  <!-- Map View -->
+  <div class="map-wrapper" id="mapWrapper" style="display:none">
+    <div id="companyMap"></div>
+    <div class="map-legend" id="mapLegend">
+      <div class="map-legend-title">Pipeline Stage</div>
+    </div>
+    <div class="map-no-address" id="mapNoAddress" style="display:none">
+      <div class="map-no-address-inner">
+        <strong id="mapNoAddressCount"></strong>
+        <span id="mapNoAddressList"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lost/Disqualified View -->
+  <div class="lost-wrapper" id="lostWrapper" style="display:none">
+    <div class="lost-inner">
+      <div class="lost-toolbar">
+        <input type="text" id="lostSearch" class="filter-input" placeholder="&#128269; Search lost opportunities..." />
+        <span class="lost-count" id="lostCount"></span>
+      </div>
+      <div class="lost-table-wrap">
+        <table class="lost-table">
+          <thead>
+            <tr>
+              <th>Company</th>
+              <th>Type</th>
+              <th>Location</th>
+              <th>Revenue</th>
+              <th>NDA</th>
+              <th>Reason</th>
+              <th>Opportunity Owner</th>
+              <th>Date Updated</th>
+            </tr>
+          </thead>
+          <tbody id="lostTableBody"></tbody>
+        </table>
+        <div id="lostEmpty" class="lost-empty" style="display:none">No lost/disqualified opportunities yet</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Weekly Agenda View -->
+  <div class="agenda-wrapper" id="agendaWrapper" style="display:none">
+    <div class="agenda-inner">
+      <div class="agenda-toolbar">
+        <h2 class="agenda-title">&#128197; Weekly Agenda</h2>
+        <span class="agenda-count" id="agendaCount"></span>
+      </div>
+      <div class="agenda-add-form" id="agendaAddForm">
+        <input type="date" id="agendaDate" class="agenda-date-input" />
+        <select id="agendaCompany" class="filter-select agenda-company-select">
+          <option value="">— No deal —</option>
+        </select>
+        <input type="text" id="agendaDesc" class="filter-input agenda-desc-input" placeholder="Topic / description..." />
+        <button class="btn btn-primary" id="agendaAddBtn">+ Add</button>
+      </div>
+      <div class="agenda-table-wrap">
+        <table class="agenda-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Deal</th>
+              <th>Topic</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="agendaTableBody"></tbody>
+        </table>
+        <div id="agendaEmpty" class="agenda-empty" style="display:none">No agenda items yet — add one above</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Analytics View -->
+  <div class="analytics-wrapper" id="analyticsWrapper" style="display:none">
+    <div class="analytics-inner">
+      <div class="analytics-toolbar">
+        <h2 class="analytics-title">Pipeline Analytics</h2>
+      </div>
+      <div class="analytics-summary-row">
+        <div class="analytics-stat-card">
+          <div class="analytics-stat-num" id="anActiveDeals">—</div>
+          <div class="analytics-stat-label">Active Deals</div>
+        </div>
+        <div class="analytics-stat-card">
+          <div class="analytics-stat-num" id="anAddedMonth">—</div>
+          <div class="analytics-stat-label">Added This Month</div>
+        </div>
+        <div class="analytics-stat-card">
+          <div class="analytics-stat-num" id="anAvgDays">—</div>
+          <div class="analytics-stat-label">Avg Days in Stage</div>
+        </div>
+        <div class="analytics-stat-card">
+          <div class="analytics-stat-num" id="anLostTotal">—</div>
+          <div class="analytics-stat-label">Lost/Disqualified</div>
+        </div>
+      </div>
+      <div class="analytics-charts-row">
+        <div class="analytics-chart-box">
+          <div class="analytics-chart-title">Deals by Stage</div>
+          <div id="chartStageCount"></div>
+        </div>
+        <div class="analytics-chart-box">
+          <div class="analytics-chart-title">Avg Days in Current Stage</div>
+          <div id="chartStageDays"></div>
+        </div>
+      </div>
+      <div class="analytics-chart-box analytics-chart-wide">
+        <div class="analytics-chart-title">Deals Added — Last 6 Months</div>
+        <div id="chartMonthly" class="monthly-chart-wrap"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Action Bar -->
+  <div class="bulk-action-bar" id="bulkActionBar" style="display:none">
+    <span id="bulkCount" class="bulk-count">0 selected</span>
+    <span class="bulk-sep">|</span>
+    <label class="bulk-label">Move to:</label>
+    <select id="bulkStageSelect" class="bulk-select">
+      <option value="">— Select Stage —</option>
+      <option>Prospecting</option>
+      <option>Information Requested</option>
+      <option>Site Visit Completed</option>
+      <option>Preliminary Due Diligence</option>
+      <option>Qualification</option>
+      <option>Stage Gate Approval</option>
+      <option>Closed</option>
+      <option>Lost/Disqualified</option>
+    </select>
+    <button class="btn btn-primary" id="bulkApplyBtn">Apply</button>
+    <button class="btn btn-secondary" id="bulkCancelBtn">Cancel</button>
+  </div>
+
+  <!-- Add/Edit Company Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modalTitle">Add Company</h2>
+        <button class="modal-close" id="modalClose">&times;</button>
+      </div>
+      <form id="companyForm" autocomplete="off">
+        <input type="hidden" id="companyId" />
+
+        <div class="form-section-title">Company Information</div>
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label for="name">Company Name <span class="required">*</span></label>
+            <input type="text" id="name" name="name" required placeholder="e.g. Acme Corp" />
+          </div>
+          <div class="form-group">
+            <label for="company_type">Company Type</label>
+            <select id="company_type" name="company_type">
+              <option value="">-- Select --</option>
+              <option>Platform</option>
+              <option>Add-On</option>
+              <option>Strategic Target</option>
+              <option>Bolt-On</option>
+              <option>Carve-Out</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="stage">Pipeline Stage</label>
+            <select id="stage" name="stage">
+              <option value="Prospecting">Prospecting</option>
+              <option value="Information Requested">Information Requested</option>
+              <option value="Site Visit Completed">Site Visit Completed</option>
+              <option value="Preliminary Due Diligence">Preliminary Due Diligence</option>
+              <option value="Qualification">Qualification</option>
+              <option value="Stage Gate Approval">Stage Gate Approval</option>
+              <option value="Closed">Closed</option>
+              <option value="Lost/Disqualified">Lost/Disqualified</option>
+            </select>
+          </div>
+          <div class="form-group full-width">
+            <label for="street_address">Street Address</label>
+            <input type="text" id="street_address" name="street_address" placeholder="e.g. 123 Main St, Suite 400" />
+          </div>
+          <div class="form-group">
+            <label for="city">City</label>
+            <input type="text" id="city" name="city" placeholder="e.g. Austin" />
+          </div>
+          <div class="form-group">
+            <label for="state">State</label>
+            <select id="state" name="state">
+              <option value="">-- Select --</option>
+              <option>AL</option><option>AK</option><option>AZ</option><option>AR</option>
+              <option>CA</option><option>CO</option><option>CT</option><option>DE</option>
+              <option>FL</option><option>GA</option><option>HI</option><option>ID</option>
+              <option>IL</option><option>IN</option><option>IA</option><option>KS</option>
+              <option>KY</option><option>LA</option><option>ME</option><option>MD</option>
+              <option>MA</option><option>MI</option><option>MN</option><option>MS</option>
+              <option>MO</option><option>MT</option><option>NE</option><option>NV</option>
+              <option>NH</option><option>NJ</option><option>NM</option><option>NY</option>
+              <option>NC</option><option>ND</option><option>OH</option><option>OK</option>
+              <option>OR</option><option>PA</option><option>RI</option><option>SC</option>
+              <option>SD</option><option>TN</option><option>TX</option><option>UT</option>
+              <option>VT</option><option>VA</option><option>WA</option><option>WV</option>
+              <option>WI</option><option>WY</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="zip">ZIP Code</label>
+            <input type="text" id="zip" name="zip" placeholder="e.g. 78701" />
+          </div>
+          <div class="form-group">
+            <label for="website">Website</label>
+            <input type="text" id="website" name="website" placeholder="e.g. acmecorp.com" />
+          </div>
+          <div class="form-group">
+            <label for="nda">NDA</label>
+            <select id="nda" name="nda">
+              <option value="">-- Select --</option>
+              <option>Yes</option>
+              <option>No</option>
+              <option>Pending</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="opportunity_owner">Opportunity Owner</label>
+            <input type="text" id="opportunity_owner" name="opportunity_owner" placeholder="e.g. John Doe" />
+          </div>
+        </div>
+
+        <div class="form-section-title">Financial Information</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="revenue">Revenue</label>
+            <input type="text" id="revenue" name="revenue" placeholder="e.g. $10M" />
+          </div>
+          <div class="form-group">
+            <label for="ebitda">EBITDA</label>
+            <input type="text" id="ebitda" name="ebitda" placeholder="e.g. $2M" />
+          </div>
+          <div class="form-group">
+            <label for="employees">Employees</label>
+            <input type="text" id="employees" name="employees" placeholder="e.g. 50" />
+          </div>
+        </div>
+
+        <div class="form-section-title">Contact Information</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="contact_name">Contact Name</label>
+            <input type="text" id="contact_name" name="contact_name" placeholder="e.g. Jane Smith" />
+          </div>
+          <div class="form-group">
+            <label for="contact_email">Contact Email</label>
+            <input type="email" id="contact_email" name="contact_email" placeholder="e.g. jane@acme.com" />
+          </div>
+          <div class="form-group">
+            <label for="contact_phone">Contact Phone</label>
+            <input type="text" id="contact_phone" name="contact_phone" placeholder="e.g. (555) 123-4567" />
+          </div>
+        </div>
+
+        <div class="form-section-title">Notes</div>
+        <div class="form-group full-width" id="lost_reason_group" style="display:none">
+          <label for="lost_reason">Reason for Disqualification</label>
+          <input type="text" id="lost_reason" name="lost_reason" placeholder="e.g. Valuation gap, owner not ready to sell..." />
+        </div>
+        <div class="form-group full-width">
+          <textarea id="notes" name="notes" rows="3" placeholder="Additional notes, deal thesis, sourcing channel, etc."></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="cancelBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="saveBtn">Save Company</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Company Detail Modal -->
+  <div class="modal-overlay" id="detailOverlay">
+    <div class="modal modal-detail">
+      <div class="modal-header">
+        <h2 id="detailName"></h2>
+        <button class="modal-close" id="detailClose">&times;</button>
+      </div>
+      <div id="detailBody"></div>
+      <div class="form-actions">
+        <button class="btn btn-danger" id="detailDelete">Delete</button>
+        <button class="btn btn-secondary" id="detailEdit">Edit</button>
+        <button class="btn btn-primary" id="detailClose2">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lost Reason Modal -->
+  <div class="modal-overlay" id="lostReasonOverlay">
+    <div class="modal modal-lost-reason">
+      <div class="modal-header">
+        <h2>Move to Lost/Disqualified</h2>
+        <button class="modal-close" id="lostReasonClose">&times;</button>
+      </div>
+      <div class="lost-reason-body">
+        <p class="lost-reason-prompt">Why is this opportunity being lost or disqualified?</p>
+        <div class="form-group">
+          <label for="lostReasonSelect">Reason</label>
+          <select id="lostReasonSelect" class="filter-select" style="width:100%">
+            <option value="">-- Select a reason --</option>
+            <option>Valuation Gap</option>
+            <option>No Response</option>
+            <option>Poor Fit</option>
+            <option>Timing</option>
+            <option>Competitive Loss</option>
+            <option>Seller Withdrew</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group" id="lostReasonOtherGroup" style="display:none">
+          <label for="lostReasonOther">Specify</label>
+          <input type="text" id="lostReasonOther" placeholder="Enter reason..." />
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" id="lostReasonCancel">Cancel</button>
+        <button class="btn btn-danger" id="lostReasonConfirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js?v=14"></script>
+</body>
+</html>

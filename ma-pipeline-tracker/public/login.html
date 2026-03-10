@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>M&A Pipeline Tracker — Sign In</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #e2e8f0;
+    }
+
+    .login-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 40px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+
+    .login-logo {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .login-logo h1 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      letter-spacing: -0.02em;
+    }
+
+    .login-logo p {
+      font-size: 0.8rem;
+      color: #64748b;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #94a3b8;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    input[type="password"] {
+      width: 100%;
+      padding: 10px 14px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 7px;
+      color: #f1f5f9;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input[type="password"]:focus {
+      border-color: #6366f1;
+    }
+
+    .error-msg {
+      display: none;
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+      color: #f87171;
+      font-size: 0.82rem;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-top: 10px;
+    }
+
+    button[type="submit"] {
+      width: 100%;
+      margin-top: 18px;
+      padding: 11px;
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    button[type="submit"]:hover { background: #4f46e5; }
+    button[type="submit"]:disabled { opacity: 0.6; cursor: default; }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <div class="login-logo">
+      <h1>M&amp;A Pipeline Tracker</h1>
+      <p>Origination Stage</p>
+    </div>
+    <form id="loginForm" autocomplete="off">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" placeholder="Enter password" required autofocus />
+      <div class="error-msg" id="errorMsg">Incorrect password. Please try again.</div>
+      <button type="submit" id="submitBtn">Sign In</button>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      const errorMsg = document.getElementById('errorMsg');
+      btn.disabled = true;
+      btn.textContent = 'Signing in...';
+      errorMsg.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: document.getElementById('password').value }),
+        });
+        if (res.ok) {
+          window.location.href = '/';
+        } else {
+          errorMsg.style.display = '';
+          document.getElementById('password').value = '';
+          document.getElementById('password').focus();
+        }
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
+      }
+    });
+  </script>
+</body>
+</html>
