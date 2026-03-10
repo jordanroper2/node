@@ -365,6 +365,7 @@ function openAddModal() {
   document.getElementById('saveBtn').textContent = 'Save Company';
   document.getElementById('companyForm').reset();
   document.getElementById('companyId').value = '';
+  syncLostReasonVisibility();
   document.getElementById('modalOverlay').classList.add('active');
   document.getElementById('name').focus();
 }
@@ -384,10 +385,18 @@ function openEditModal(id) {
     if (el) el.value = c[f] || '';
   });
 
+  syncLostReasonVisibility();
   closeDetailModal();
   document.getElementById('modalOverlay').classList.add('active');
   document.getElementById('name').focus();
 }
+
+function syncLostReasonVisibility() {
+  const isLost = document.getElementById('stage').value === 'Lost/Disqualified';
+  document.getElementById('lost_reason_group').style.display = isLost ? '' : 'none';
+}
+
+document.getElementById('stage').addEventListener('change', syncLostReasonVisibility);
 
 function closeModal() {
   document.getElementById('modalOverlay').classList.remove('active');
